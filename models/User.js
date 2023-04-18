@@ -9,12 +9,11 @@ const User = (sequelize, DataTypes) => {
       },
       nickname: {
         type: DataTypes.STRING(50),
-        allowNull: false,
+        allowNull: true,
       },
       joinDate: {
         type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+        allowNull: true,
       },
       isSocial: {
         type: DataTypes.BOOLEAN,
