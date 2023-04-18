@@ -2,7 +2,7 @@ import Sequelize from "sequelize";
 import Config from "../config/config.js";
 import User from "./User.js";
 import Post from "./Post.js";
-import Alert from "./Alert.js";
+import Notification from "./Notification.js";
 import Dept from "./Dept.js";
 import Course from "./Course.js";
 import Wishlist from "./Wishlist.js";
@@ -22,7 +22,7 @@ const sequelize = new Sequelize(
 
 db.User = User(sequelize, Sequelize);
 db.Post = Post(sequelize, Sequelize);
-db.Alert = Alert(sequelize, Sequelize);
+db.Notification = Notification(sequelize, Sequelize);
 db.Dept = Dept(sequelize, Sequelize);
 db.Course = Course(sequelize, Sequelize);
 db.Wishlist = Wishlist(sequelize, Sequelize);

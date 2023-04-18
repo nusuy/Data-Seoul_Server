@@ -1,6 +1,6 @@
-const Alert = (sequelize, DataTypes) => {
-  const Alert = sequelize.define(
-    "Alert",
+const Notification = (sequelize, DataTypes) => {
+  const Notification = sequelize.define(
+    "Notification",
     {
       title: {
         type: DataTypes.STRING(60),
@@ -28,13 +28,13 @@ const Alert = (sequelize, DataTypes) => {
     {
       charset: "utf8",
       collate: "utf8_general_ci",
-      tableName: "Alert",
+      tableName: "Notification",
       timestamps: false,
     }
   );
 
-  Alert.associate = (models) => {
-    models.Alert.belongsTo(models.User, {
+  Notification.associate = (models) => {
+    models.Notification.belongsTo(models.User, {
       foreignKey: "userId",
       sourceKey: "id",
       onDelete: "cascade",
@@ -42,7 +42,7 @@ const Alert = (sequelize, DataTypes) => {
     });
   };
 
-  return Alert;
+  return Notification;
 };
 
-export default Alert;
+export default Notification;

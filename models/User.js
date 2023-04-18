@@ -65,7 +65,7 @@ const User = (sequelize, DataTypes) => {
       onDelete: "cascade",
       onUpdate: "cascade",
     });
-    models.User.hasMany(models.Alert, {
+    models.User.hasMany(models.Notification, {
       foreignKey: "userId",
       onDelete: "cascade",
       onUpdate: "cascade",
