@@ -93,7 +93,7 @@ userController.requestEmailCode = async (req, res) => {
 
     // 존재 시
     if (user) {
-      if (user.isAuthroized) {
+      if (user.nickname) {
         throw new Error("Email Already Exists.");
       } else {
         await User.destroy({ where: { email: email } });
@@ -102,13 +102,6 @@ userController.requestEmailCode = async (req, res) => {
 
     // 인증코드 전송
     sendEmailCode(email);
-
-    // DB 저장
-    await User.create({
-      email: email,
-      isSocial: false,
-      isAuthroized: true,
-    });
 
     // 응답 전달
     res.status(200).send({
@@ -132,7 +125,54 @@ userController.requestEmailCode = async (req, res) => {
   }
 };
 
-userController.verifyEmailCode = async (req, res) => {};
+userController.verifyEmailCode = async (req, res) => {
+  let message = "Server Error.";
+  let errCode = 500;
+  try {
+    const email = req.body.email;
+    const userCode = req.body.code;
+
+    const code = await redisCli.get(email);
+
+    // 인증코드 내역이 존재하지 않는 이메일일 경우
+    if (!code) {
+      throw new Error("Invalid Email.");
+    }
+
+    // 코드가 일치하지 않을 경우
+    if (code !== userCode) {
+      throw new Error("Invalid Code.");
+    }
+
+    // DB 저장
+    await User.create({
+      email: email,
+      isSocial: false,
+      isAuthroized: true,
+    });
+
+    // 응답 전달
+    res.status(200).send({
+      status: "Success",
+      message: "Authorized Successfully.",
+    });
+  } catch (err) {
+    console.error(err);
+
+    if (err.message === "Invalid Code.") {
+      message = err.message;
+      errCode = 401;
+    } else if (err.message === "Invalid Email.") {
+      message = err.message;
+      errCode = 400;
+    }
+
+    res.status(errCode).send({
+      status: errCode,
+      message: message,
+    });
+  }
+};
 
 userController.joinEmail = async (req, res) => {
   let message = "Server Error.";
