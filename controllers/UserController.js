@@ -1,6 +1,6 @@
 import models from "../models/index.js";
-import createHashedPassword from "../utils/hashPassword.js";
-import verifyPassword from "../utils/hashPassword.js";
+import { createHashedPassword } from "../utils/hashPassword.js";
+import { verifyPassword } from "../utils/hashPassword.js";
 import getJWT from "../utils/jwt.js";
 import redisCli from "../utils/redisCli.js";
 
