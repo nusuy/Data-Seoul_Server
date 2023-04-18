@@ -4,6 +4,11 @@ import { verifyPassword } from "../utils/hashPassword.js";
 import getJWT from "../utils/jwt.js";
 import redisCli from "../utils/redisCli.js";
 import sendEmailCode from "../utils/sendEmailCode.js";
+import {
+  emailValidation,
+  nicknameValidation,
+  passwordValidation,
+} from "../utils/strValidation.js";
 
 const User = models.User;
 const userController = {};
@@ -76,13 +81,36 @@ userController.login = async (req, res) => {
 
 userController.loginKakao = async (req, res) => {};
 
-userController.logout = async (req, res) => {};
+userController.logout = async (req, res) => {
+  try {
+    // Redis 내 accessToken 정보 삭제
+    const token = req.token;
+    await redisCli.del(token);
+
+    console.log("Updated Successfully.");
+
+    res.status(200).send({
+      status: "Success",
+      message: "Signed Out Successfully.",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      status: "Error",
+      message: "Server Error.",
+    });
+  }
+};
 
 userController.requestEmailCode = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
     const email = req.body.email;
+
+    if (!emailValidation(email)) {
+      throw new Error("Invalid Email.");
+    }
 
     // 중복확인
     const user = await User.findOne({
@@ -111,7 +139,10 @@ userController.requestEmailCode = async (req, res) => {
   } catch (err) {
     console.error(err);
 
-    if (err.message === "Email Already Exists.") {
+    if (
+      err.message === "Email Already Exists." ||
+      err.message === "Invalid Email."
+    ) {
       message = err.message;
       errCode = 400;
     } else if (err.message === "Failed to Send Email.") {
@@ -189,12 +220,24 @@ userController.joinEmail = async (req, res) => {
       },
     });
 
+    // DB에 이메일 정보 미존재 -> 이메일 인증 필요
     if (!user) {
       throw new Error("Unauthorized Email.");
     }
 
-    if (user.password) {
+    // DB에 정보 이미 존재
+    if (user.nickname) {
       throw new Error("Email Already Exists.");
+    }
+
+    // password 유효성 확인 (공백, 길이)
+    if (!passwordValidation(password)) {
+      throw new Error("Invalid Password.");
+    }
+
+    // nickname 유효성 확인 (공백, 길이)
+    if (!nicknameValidation(nickname)) {
+      throw new Error("Invalid Nickname.");
     }
 
     // password hashing
@@ -230,7 +273,11 @@ userController.joinEmail = async (req, res) => {
     if (err.message === "Unauthorized Email.") {
       message = err.message;
       errCode = 401;
-    } else if (err.message === "Email Already Exists.") {
+    } else if (
+      err.message === "Email Already Exists." ||
+      err.message === "Invalid Password." ||
+      err.message === "Invalid Nickname."
+    ) {
       message = err.message;
       errCode = 400;
     }
