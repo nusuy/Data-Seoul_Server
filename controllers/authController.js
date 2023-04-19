@@ -44,7 +44,7 @@ authController.login = async (req, res) => {
 
     // 비밀번호 확인
     // 비밀번호 불일치
-    if (!verifyPassword(userPassword, salt, password)) {
+    if (!(await verifyPassword(password, salt, userPassword))) {
       throw new Error("Incorrect Password.");
     }
 
@@ -114,7 +114,7 @@ authController.loginKakao = async (req, res) => {
       },
     });
 
-    if (!profile.data.kakao_account.has_email) {
+    if (!profile.data.kakao_account.email) {
       throw new Error("Email Consent Needed.");
     }
 
@@ -283,7 +283,7 @@ authController.verifyEmailCode = async (req, res) => {
     await User.create({
       email: email,
       isSocial: false,
-      isAuthroized: true,
+      isAuthorized: true,
     });
 
     // 응답 전달
@@ -345,7 +345,7 @@ authController.joinEmail = async (req, res) => {
     }
 
     // password hashing
-    const { hashedPassword, salt } = createHashedPassword(password);
+    const { hashedPassword, salt } = await createHashedPassword(password);
 
     // DB 수정
     await User.update(
@@ -368,7 +368,6 @@ authController.joinEmail = async (req, res) => {
       message: "Signed In Successfully.",
       data: {
         userId: user.id,
-        accessToken: token,
       },
     });
   } catch (err) {
