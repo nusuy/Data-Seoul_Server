@@ -26,12 +26,12 @@ const User = (sequelize, DataTypes) => {
         defaultValue: false,
       },
       password: {
-        type: DataTypes.STRING(15),
+        type: DataTypes.STRING(100),
         allowNull: true,
         comment: "email login only",
       },
       salt: {
-        type: DataTypes.STRING(64),
+        type: DataTypes.STRING(100),
         allowNull: true,
         comment: "email login only",
       },
