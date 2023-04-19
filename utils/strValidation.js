@@ -8,12 +8,12 @@ export const passwordValidation = (password) => {
   const maxLength = 20;
   const minLength = 10;
 
-  if (nickname.length < minLength || nickname.length > maxLength) {
+  if (password.length < minLength || password.length > maxLength) {
     return false;
   }
 
   const blank_pattern = /[\s]/g;
-  if (blank_pattern.test(nickname)) {
+  if (blank_pattern.test(password)) {
     return false;
   }
 
