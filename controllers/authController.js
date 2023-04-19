@@ -1,3 +1,5 @@
+import axios from "axios";
+import dotenv from "dotenv";
 import models from "../models/index.js";
 import { createHashedPassword } from "../utils/hashPassword.js";
 import { verifyPassword } from "../utils/hashPassword.js";
@@ -10,10 +12,12 @@ import {
   passwordValidation,
 } from "../utils/strValidation.js";
 
-const User = models.User;
-const userController = {};
+dotenv.config();
 
-userController.login = async (req, res) => {
+const User = models.User;
+const authController = {};
+
+authController.login = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
 
@@ -48,9 +52,13 @@ userController.login = async (req, res) => {
     const token = getJWT({ userId, nickname, email });
 
     // Redis 내 토큰 정보 저장 (1시간)
-    await redisCli.set(token, String(userId), {
-      EX: 60 * 60,
-    });
+    await redisCli
+      .set(token, String(userId), {
+        EX: 60 * 60,
+      })
+      .then(() => {
+        console.log(`[Redis] User ${userId} : Token Saved Successfully.`);
+      });
 
     // 응답 전달
     res.status(200).send({
@@ -79,13 +87,109 @@ userController.login = async (req, res) => {
   }
 };
 
-userController.loginKakao = async (req, res) => {};
+authController.loginKakao = async (req, res) => {
+  let message = "Server Error.";
+  let errCode = 500;
+  try {
+    const code = req.query.code;
 
-userController.logout = async (req, res) => {
+    // 인가코드 전송
+    const result = await axios.post(
+      `${process.env.KAKAO_OAUTH_TOKEN_API_URL}?grant_type=${process.env.KAKAO_GRANT_TYPE}&client_id=${process.env.KAKAO_CLIENT_ID}&redirect_uri=${process.env.KAKAO_REDIRECT_URI}&code=${code}`,
+      null,
+      {
+        headers: {
+          "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
+        },
+      }
+    );
+
+    const accessToken = result.data["access_token"];
+
+    // 프로필 정보 가져오기
+    const profile = await axios.get(`${process.env.KAKAO_PROFILE_URL}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+      },
+    });
+
+    if (!profile.data.kakao_account.has_email) {
+      throw new Error("Email Consent Needed.");
+    }
+
+    const nickname = profile.data.kakao_account.profile.nickname;
+    const email = profile.data.kakao_account.email;
+
+    // 회원조회
+    let user = await User.findOne({
+      where: { email: email },
+    });
+
+    if (!user) {
+      // 새로운 회원
+      await User.create({
+        email: email,
+        nickname: nickname,
+        joinDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
+        isSocial: true,
+        isAuthorized: true,
+      });
+      user = await User.findOne({
+        where: { email: email },
+      });
+    }
+
+    const userId = user.id;
+    const userNickname = user.nickname;
+
+    // accessToken 발급
+    const token = getJWT({ userId, userNickname, email });
+
+    // Redis 내 토큰 정보 저장 (1시간)
+    await redisCli
+      .set(token, String(userId), {
+        EX: 60 * 60,
+      })
+      .then(() => {
+        console.log(`[Redis] User ${userId} : Token Saved Successfully.`);
+      });
+
+    // 응답 전달
+    res.status(200).send({
+      status: "Success",
+      message: "Signed In Successfully.",
+      data: {
+        userId: userId,
+        accessToken: token,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+
+    if (err.message === "Email Consent Needed.") {
+      message = err.message;
+      errCode = 403;
+    } else if (err.message === "Request failed with status code 400") {
+      message = "Invalid Authorization Code";
+      errCode = 403;
+    }
+
+    res.status(errCode).send({
+      status: errCode,
+      message: message,
+    });
+  }
+};
+
+authController.logout = async (req, res) => {
   try {
     // Redis 내 accessToken 정보 삭제
     const token = req.token;
-    await redisCli.del(token);
+    const userId = await redisCli.get(token);
+    await redisCli.del(token).then(() => {
+      console.log(`[Redis] User ${userId} : Token Removed Successfully.`);
+    });
 
     console.log("Updated Successfully.");
 
@@ -102,7 +206,7 @@ userController.logout = async (req, res) => {
   }
 };
 
-userController.requestEmailCode = async (req, res) => {
+authController.requestEmailCode = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
@@ -156,7 +260,7 @@ userController.requestEmailCode = async (req, res) => {
   }
 };
 
-userController.verifyEmailCode = async (req, res) => {
+authController.verifyEmailCode = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
@@ -205,7 +309,7 @@ userController.verifyEmailCode = async (req, res) => {
   }
 };
 
-userController.joinEmail = async (req, res) => {
+authController.joinEmail = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
@@ -289,4 +393,4 @@ userController.joinEmail = async (req, res) => {
   }
 };
 
-export default userController;
+export default authController;
