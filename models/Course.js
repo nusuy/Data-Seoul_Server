@@ -12,7 +12,7 @@ const Course = (sequelize, DataTypes) => {
         allowNull: true,
       },
       url: {
-        type: DataTypes.STRING(1000),
+        type: DataTypes.STRING(2500),
         allowNull: true,
       },
       applyStartDate: {
