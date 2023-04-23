@@ -10,6 +10,7 @@ const development = {
   host: process.env.DB_HOST,
   dialect: "mysql",
   timezone: "+09:00",
+  logging: false,
 };
 
 export default { development };

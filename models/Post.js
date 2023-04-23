@@ -15,7 +15,7 @@ const Post = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
-      wishCount: {
+      likeCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,

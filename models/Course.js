@@ -5,28 +5,37 @@ const Course = (sequelize, DataTypes) => {
       type: {
         type: DataTypes.STRING(10),
         allowNull: false,
-        comment: "offline / online",
+        comment: "off / on",
       },
       title: {
         type: DataTypes.STRING(100),
         allowNull: true,
       },
       url: {
-        type: DataTypes.STRING(500),
+        type: DataTypes.STRING(1000),
+        allowNull: true,
+      },
+      applyStartDate: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+      },
+      applyEndDate: {
+        type: DataTypes.STRING(50),
         allowNull: true,
       },
       startDate: {
-        type: DataTypes.DATE,
-        allowNull: false,
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        comment: "yyyy-mm-dd / always",
       },
       endDate: {
-        type: DataTypes.DATE,
-        allowNull: false,
+        type: DataTypes.STRING(50),
+        allowNull: true,
+        comment: "yyyy-mm-dd / always",
       },
       category: {
         type: DataTypes.STRING(50),
         allowNull: true,
-        comment: "offline / online",
       },
       deptName: {
         type: DataTypes.STRING(100),
@@ -44,10 +53,16 @@ const Course = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(17, 14),
         allowNull: true,
       },
+      isAvailable: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        comment: "online only",
+      },
       isFree: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: true,
+        defaultValue: false,
         comment: "online only",
       },
       capacity: {
