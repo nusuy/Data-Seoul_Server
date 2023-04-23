@@ -157,7 +157,7 @@ authController.loginKakao = async (req, res) => {
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed In Successfully.",
       data: {
         userId: userId,
