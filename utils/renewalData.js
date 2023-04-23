@@ -12,8 +12,7 @@ dotenv.config();
 
 const checkRecentUpdate = (date, now) => {
   // 최근 갱신 날짜보다 24시간 지난 시점이라면 true
-  console.log(new Date(date.setDate(date.getHours() + 24)).toDateString());
-  return date.setDate(date.getHours() + 24) <= now;
+  return date.setDate(date.getDate() - 1) <= now;
 };
 
 const checkNull = (value) => {
@@ -32,13 +31,18 @@ const checkDuplicate = async (item) => {
   return res ? true : false;
 };
 
-const checkLatLng = async (latData, lngData) => {
+const checkLatLng = (latData, lngData) => {
   // lat, lng 값이 반대로 저장된 데이터일 경우 두 값 바꿔주기
+  // lat, lng 값이 잘못 입력된 경우 null로 변경
   let lat = Number(latData);
   let lng = Number(lngData);
 
   if (lat === NaN || lng === NaN) {
     lat = null;
+    lng = null;
+  } else if (lat > 100 && lng > 100) {
+    lat = null;
+  } else if (lat < 100 && lng < 100) {
     lng = null;
   } else if (lat > 100 && lng < 100) {
     const temp = lat;
@@ -46,14 +50,17 @@ const checkLatLng = async (latData, lngData) => {
     lng = temp;
   }
 
+  lat = lat === 0 ? null : lat;
+  lng = lng === 0 ? null : lng;
+
   return { lat, lng };
 };
 
 const insertData = (data, type) => {
   const result = {};
-  const lat = type === "dept" ? data["MAP_LAT"] : data["MAP_LATITUDE"];
-  const lng = type === "dept" ? data["MAP_LNG"] : data["MAP_LONGITUDE"];
-  const { checkedLat, checkedLng } = checkLatLng(lat, lng);
+  const latData = type === "dept" ? data["MAP_LAT"] : data["MAP_LATITUDE"];
+  const lngData = type === "dept" ? data["MAP_LNG"] : data["MAP_LONGITUDE"];
+  const { lat, lng } = checkLatLng(latData, lngData);
 
   switch (type) {
     case "off":
@@ -66,8 +73,8 @@ const insertData = (data, type) => {
       result.endDate = parseDate(data["COURSE_END_DT"], true);
       result.deptName = checkNull(data["DEPT_NM"]);
       result.deptGu = checkNull(data["GU"]);
-      result.deptLat = checkedLat;
-      result.deptLng = checkedLng;
+      result.deptLat = lat;
+      result.deptLng = lng;
       result.capacity = data["CAPACITY"] === "" ? 0 : Number(data["CAPACITY"]);
       break;
     case "on":
@@ -82,8 +89,8 @@ const insertData = (data, type) => {
       result.startDate = checkNull(data["COURSE_DT"]);
       result.deptName = checkNull(data["DEPT_NAME"]);
       result.deptGu = checkNull(data["DEPT_GU"]);
-      result.deptLat = checkedLat;
-      result.deptLng = checkedLng;
+      result.deptLat = lat;
+      result.deptLng = lng;
       result.isFree = data["FEE"] === "무료" ? true : false;
       result.isAvailable = data["STATUS"] === "ING" ? true : false;
       break;
@@ -92,8 +99,8 @@ const insertData = (data, type) => {
       result.tel = checkNull(data["TEL"]);
       result.addr = checkNull(data["ADDR"]);
       result.url = checkNull(data["HOMEPAGE_URL"]);
-      result.lat = checkedLat;
-      result.lng = checkedLng;
+      result.lat = lat;
+      result.lng = lng;
       break;
   }
 
@@ -153,7 +160,7 @@ export const renewalCourseData = async (isOffline) => {
   const type = isOffline ? "off" : "on";
 
   // 1. 최근 갱신 날짜 확인
-  const recentUpdate = await System.findAll({
+  const log = await System.findAll({
     where: {
       category: type,
     },
@@ -163,17 +170,20 @@ export const renewalCourseData = async (isOffline) => {
     return res[0] ? res[0]["dataValues"].renewalDate : null;
   });
 
-  // 2. log 등록
+  const recentUpdate = log ? log.renewalDate : null;
   const needUpdate = recentUpdate ? checkRecentUpdate(recentUpdate, now) : true;
-  let logId = null;
-  if (needUpdate) {
-    logId = await System.create({
-      category: type,
-      renewalDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
-    }).then((res) => {
-      return res["dataValues"].id;
-    });
+  if (!needUpdate) {
+    return;
   }
+
+  // 2. log 등록
+  const logId = await System.create({
+    category: type,
+    renewalDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
+  }).then((res) => {
+    return res["dataValues"].id;
+  });
+
   try {
     // 3. 데이터 가져오기
     let dataCount = 0;
@@ -198,7 +208,13 @@ export const renewalCourseData = async (isOffline) => {
         throw new Error("Open API request failed.");
       });
 
-    // 3-2. 데이터 개수에 따라 전체 데이터 가져오기
+    // 3-2. 데이터 개수와 기존 데이터 개수 비교
+    const existingCount = recentUpdate ? log.count : null;
+    if (dataCount === existingCount) {
+      return;
+    }
+
+    // 3-3. 데이터 개수에 따라 전체 데이터 가져오기
     const dataResult = [];
     for (let i = 0; i < count; i++) {
       const index =
@@ -218,21 +234,10 @@ export const renewalCourseData = async (isOffline) => {
         });
     }
 
-    // // temp
-    // await axios
-    //   .get(
-    //     `${process.env.OPEN_API_BASE_URL}/${process.env.OPEN_API_KEY}/json/${SERVICE}/1/5`
-    //   )
-    //   .then((res) => {
-    //     dataResult.push(res.data[SERVICE]["row"]);
-    //   })
-    //   .catch((err) => {
-    //     console.error(err);
-    //     throw new Error("Open API request failed.");
-    //   });
-
-    // 3-3. 데이터 등록 일자 확인
+    // 4. 데이터 정제
     const result = [];
+    const current = now;
+    const afterDate = new Date(current.setFullYear(current.getFullYear() - 5));
     dataResult.map((set) => {
       set.map((item) => {
         // A. 최근 갱신 이력이 존재하는 경우
@@ -245,7 +250,6 @@ export const renewalCourseData = async (isOffline) => {
         const courseDate = data["applyEndDate"]
           ? new Date(data["applyEndDate"])
           : new Date(data["applyStartDate"]);
-        const afterDate = new Date(now.setFullYear(now.getFullYear() - 5));
         const isNew =
           (recentUpdate && insertDate && recentUpdate <= insertDate) ||
           !recentUpdate;
@@ -259,7 +263,7 @@ export const renewalCourseData = async (isOffline) => {
       });
     });
 
-    // 4. DB에 저장
+    // 5. DB에 저장
     await System.update(
       {
         count: dataCount,
@@ -360,28 +364,36 @@ export const renewalDeptData = async () => {
     // 4. 데이터 정제
     // 4-1. 데이터 중복 여부 검사 후 새로운 데이터만 저장
     const result = [];
-    dataResult.map((set) => {
-      set.map((item) => {
-        if (!checkDuplicate(item)) {
+    for (const set of dataResult) {
+      for (const item of set) {
+        if (!(await checkDuplicate(item))) {
           const data = insertData(item, "dept");
           result.push(data);
         }
-      });
-    });
+      }
+    }
 
     // 4-2. 기관 이름이 같은 데이터 검사
     const filteredData = [];
     result.map((item) => {
       const name = item["name"];
-      const arr = [item];
+      const arr = [];
+      if (item["lng"] && item["lat"]) {
+        arr.push(item);
+      }
+
       result.map((value) => {
         // lng, lat 값이 있는 값으로 선별
-        if (value.includes(name) && value.lng && value.lat) {
+        if (value["name"].includes(name) && value.lng && value.lat) {
           arr.push(value);
         }
       });
 
-      filteredData.push(arr[0]);
+      if (arr.length === 0) {
+        filteredData.push(item);
+      } else {
+        filteredData.push(arr[0]);
+      }
     });
 
     // 5. DB에 저장
