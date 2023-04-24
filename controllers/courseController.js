@@ -5,6 +5,7 @@ const Course = models.Course;
 const Wishlist = models.Wishlist;
 const courseController = {};
 
+// 강좌 목록 조회
 courseController.readList = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -78,6 +79,7 @@ courseController.readList = async (req, res) => {
   }
 };
 
+// 강좌 세부 조회
 courseController.readDetail = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -116,6 +118,7 @@ courseController.readDetail = async (req, res) => {
   }
 };
 
+// 찜 추가 및 삭제
 courseController.addLike = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;

@@ -17,6 +17,7 @@ dotenv.config();
 const User = models.User;
 const authController = {};
 
+// 이메일 로그인
 authController.login = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -87,6 +88,7 @@ authController.login = async (req, res) => {
   }
 };
 
+// 소셜 로그인
 authController.loginKakao = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -182,6 +184,7 @@ authController.loginKakao = async (req, res) => {
   }
 };
 
+// 로그아웃
 authController.logout = async (req, res) => {
   try {
     // Redis 내 accessToken 정보 삭제
@@ -206,6 +209,7 @@ authController.logout = async (req, res) => {
   }
 };
 
+// 이메일 인증코드 요청
 authController.requestEmailCode = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -260,6 +264,7 @@ authController.requestEmailCode = async (req, res) => {
   }
 };
 
+// 이메일 인증코드 확인
 authController.verifyEmailCode = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -309,6 +314,7 @@ authController.verifyEmailCode = async (req, res) => {
   }
 };
 
+// 이메일 가입
 authController.joinEmail = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
