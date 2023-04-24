@@ -12,7 +12,7 @@ dotenv.config();
 
 const checkRecentUpdate = (date, now) => {
   // 최근 갱신 날짜보다 24시간 지난 시점이라면 true
-  return date.setDate(date.getDate() - 1) <= now;
+  return date.setDate(date.getDate() - 1) >= now;
 };
 
 const checkNull = (value) => {
@@ -167,7 +167,7 @@ export const renewalCourseData = async (isOffline) => {
     order: [["renewalDate", "DESC"]],
     limit: 1,
   }).then((res) => {
-    return res[0] ? res[0]["dataValues"].renewalDate : null;
+    return res[0] ? res[0]["dataValues"] : null;
   });
 
   const recentUpdate = log ? log.renewalDate : null;
