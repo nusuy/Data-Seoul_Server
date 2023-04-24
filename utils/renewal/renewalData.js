@@ -74,30 +74,12 @@ const renewalData = async () => {
     error.dept = true;
   }
 
-  let errorData = "";
-  if (!error.off && !error.on && !error.dept) {
-    errorData = "Successfully Updated.";
+  const updateResult = {};
+  updateResult.off = error.off ? "failed" : "success";
+  updateResult.on = error.on ? "failed" : "success";
+  updateResult.dept = error.dept ? "failed" : "success";
 
-    return { errorData, newLength };
-  }
-
-  if (error.off) {
-    errorData += "Offline";
-  }
-
-  if (error.off && error.on) {
-    errorData += ", Online";
-  } else if (!error.off && error.on) {
-    errorData += "Online";
-  }
-
-  if ((error.off || error.on) && error.dept) {
-    errorData += ", Dept";
-  } else if (!error.off && !error.on && error.dept) {
-    errorData += "Dept";
-  }
-
-  return { errorData, newLength };
+  return { updateResult, newLength };
 };
 
 export default renewalData;

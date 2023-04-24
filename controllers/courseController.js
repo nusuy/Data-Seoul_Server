@@ -1,4 +1,4 @@
-import renewalData from "../utils/renewalData.js";
+import renewalData from "../utils/renewal/renewalData.js";
 import models from "../models/index.js";
 
 const Course = models.Course;
@@ -10,7 +10,7 @@ courseController.readList = async (req, res) => {
   let errCode = 500;
   try {
     // 데이터 갱신
-    await renewalData();
+    const { updateResult, newLength } = await renewalData();
 
     const type = req.params.type; // all / off / on
     const types = ["all", "off", "on"];
@@ -58,6 +58,7 @@ courseController.readList = async (req, res) => {
 
     res.status(200).send({
       status: 200,
+      message: `[Update Result] Offline: ${updateResult.off} - ${newLength.off}, Online: ${updateResult.on} - ${newLength.on}, Dept: ${updateResult.dept} - ${newLength.dept}`,
       data: courseList,
     });
   } catch (err) {
