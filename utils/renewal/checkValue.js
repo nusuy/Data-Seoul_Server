@@ -1,4 +1,33 @@
-const parseDate = (str, isStr) => {
+export const checkNull = (value) => {
+  return value === "" ? null : value;
+};
+
+export const checkLatLng = (latData, lngData) => {
+  // lat, lng 값이 반대로 저장된 데이터일 경우 두 값 바꿔주기
+  // lat, lng 값이 잘못 입력된 경우 null로 변경
+  let lat = Number(latData);
+  let lng = Number(lngData);
+
+  if (lat === NaN || lng === NaN) {
+    lat = null;
+    lng = null;
+  } else if (lat > 100 && lng > 100) {
+    lat = null;
+  } else if (lat < 100 && lng < 100) {
+    lng = null;
+  } else if (lat > 100 && lng < 100) {
+    const temp = lat;
+    lat = lng;
+    lng = temp;
+  }
+
+  lat = lat === 0 ? null : lat;
+  lng = lng === 0 ? null : lng;
+
+  return { lat, lng };
+};
+
+export const parseDate = (str, isStr) => {
   if (str === "" || !str) {
     return null;
   }
@@ -39,4 +68,12 @@ const parseDate = (str, isStr) => {
   }
 };
 
-export default parseDate;
+export const parseOnlineApplyDate = (str) => {
+  if (str === "" || !str) {
+    return null;
+  }
+  const startDate = str.split("~")[0];
+  const endDate = str.split("~")[1];
+
+  return { startDate, endDate };
+};
