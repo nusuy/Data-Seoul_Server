@@ -64,7 +64,7 @@ const insertData = (data, type) => {
 
   switch (type) {
     case "off":
-      result.type = "offline";
+      result.type = type;
       result.title = data["COURSE_NM"];
       result.url = checkNull(data["COURSE_APPLY_URL"]);
       result.applyStartDate = parseDate(data["COURSE_REQUEST_STR_DT"], true);
@@ -81,8 +81,7 @@ const insertData = (data, type) => {
       const { applyStart, applyEnd } = parseOnlineApplyDate(
         data["COURSE_REQUEST_DT"]
       );
-
-      result.type = "online";
+      result.type = type;
       result.title = data["COURSE_NM"];
       result.applyStartDate = parseDate(applyStart, true);
       result.applyEndDate = parseDate(applyEnd, true);
@@ -155,7 +154,7 @@ const addDB = async (data, type) => {
   }
 };
 
-export const renewalCourseData = async (isOffline) => {
+const renewalCourseData = async (isOffline) => {
   const now = new Date();
   const type = isOffline ? "off" : "on";
 
@@ -240,9 +239,12 @@ export const renewalCourseData = async (isOffline) => {
     const afterDate = new Date(current.setFullYear(current.getFullYear() - 5));
     dataResult.map((set) => {
       set.map((item) => {
-        // A. 최근 갱신 이력이 존재하는 경우
+        // A. test 데이터일 경우 저장하지 않음
+        // B. 최근 갱신 이력이 존재하는 경우
         //     -> 데이터 등록 날짜보다 갱신 날짜가 더 이전이어야 데이터 저장
-        // B. 5년 이상된 데이터일 경우 저장하지 않음
+        // C. 5년 이상된 데이터일 경우 저장하지 않음
+        const isTest =
+          data["title"].toLowerCase() === "test" || data["title"] === "테스트";
         const insertDate = parseDate(item["INSERT_DT"], false);
         const data = insertData(item, type);
         const isDateNull =
@@ -255,8 +257,8 @@ export const renewalCourseData = async (isOffline) => {
           !recentUpdate;
 
         if (
-          (isNew && isDateNull) ||
-          (isNew && !isDateNull && courseDate >= afterDate)
+          (!isTest && isNew && isDateNull) ||
+          (!isTest && isNew && !isDateNull && courseDate >= afterDate)
         ) {
           result.push(data);
         }
@@ -285,7 +287,7 @@ export const renewalCourseData = async (isOffline) => {
   }
 };
 
-export const renewalDeptData = async () => {
+const renewalDeptData = async () => {
   const now = new Date();
 
   // 1. 최근 갱신 날짜 확인
@@ -362,11 +364,14 @@ export const renewalDeptData = async () => {
     }
 
     // 4. 데이터 정제
-    // 4-1. 데이터 중복 여부 검사 후 새로운 데이터만 저장
+    // 4-1. 테스트 데이터 제외
+    // 4-2. 데이터 중복 여부 검사 후 새로운 데이터만 저장
     const result = [];
+    const isTest =
+      data["name"].toLowerCase() === "test" || data["name"] === "테스트";
     for (const set of dataResult) {
       for (const item of set) {
-        if (!(await checkDuplicate(item))) {
+        if (!isTest && !(await checkDuplicate(item))) {
           const data = insertData(item, "dept");
           result.push(data);
         }
@@ -419,3 +424,11 @@ export const renewalDeptData = async () => {
     });
   }
 };
+
+const renewalData = async () => {
+  await renewalCourseData(true);
+  await renewalCourseData(false);
+  await renewalDeptData();
+};
+
+export default renewalData;
