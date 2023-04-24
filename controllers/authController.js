@@ -62,7 +62,7 @@ authController.login = async (req, res) => {
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed In Successfully.",
       data: {
         userId: userId,
@@ -194,7 +194,7 @@ authController.logout = async (req, res) => {
     console.log("Updated Successfully.");
 
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed Out Successfully.",
     });
   } catch (err) {
@@ -237,7 +237,7 @@ authController.requestEmailCode = async (req, res) => {
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Sent Successfully.",
     });
   } catch (err) {
@@ -288,7 +288,7 @@ authController.verifyEmailCode = async (req, res) => {
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Authorized Successfully.",
     });
   } catch (err) {
@@ -364,7 +364,7 @@ authController.joinEmail = async (req, res) => {
 
     // 응답 전송
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed In Successfully.",
       data: {
         userId: user.id,
