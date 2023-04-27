@@ -1,6 +1,7 @@
 import express from "express";
 import authController from "../controllers/authController.js";
 import validateAccessToken from "../middlewares/validateAccessToken.js";
+import validateRefreshToken from "../middlewares/validateRefreshToken.js";
 
 const router = express.Router();
 
@@ -10,5 +11,6 @@ router.post("/logout", validateAccessToken, authController.logout);
 router.post("/email", authController.requestEmailCode);
 router.post("/email/code", authController.verifyEmailCode);
 router.post("/join", authController.joinEmail);
+router.post("/refresh", validateRefreshToken, authController.refresh);
 
 export default router;
