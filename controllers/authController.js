@@ -1,9 +1,10 @@
 import axios from "axios";
 import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
 import models from "../models/index.js";
 import { createHashedPassword } from "../utils/hashPassword.js";
 import { verifyPassword } from "../utils/hashPassword.js";
-import getJWT from "../utils/jwt.js";
+import { getJWT, getRefresh } from "../utils/jwt.js";
 import redisCli from "../utils/redisCli.js";
 import sendEmailCode from "../utils/sendEmailCode.js";
 import {
@@ -17,6 +18,7 @@ dotenv.config();
 const User = models.User;
 const authController = {};
 
+// 이메일 로그인
 authController.login = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -48,10 +50,12 @@ authController.login = async (req, res) => {
       throw new Error("Incorrect Password.");
     }
 
-    // accessToken 발급
+    // accessToken & refreshToken 발급
     const token = getJWT({ userId, nickname, email });
+    const refresh = getRefresh({ userId, nickname, email });
 
-    // Redis 내 토큰 정보 저장 (1시간)
+    // Redis 내 토큰 정보 저장
+    // A. accessToken (1 h)
     await redisCli
       .set(token, String(userId), {
         EX: 60 * 60,
@@ -59,14 +63,25 @@ authController.login = async (req, res) => {
       .then(() => {
         console.log(`[Redis] User ${userId} : Token Saved Successfully.`);
       });
+    // B. refreshToken (14 d)
+    await redisCli
+      .set(`${userId}refresh`, refresh, {
+        EX: 60 * 60 * 24 * 14,
+      })
+      .then(() => {
+        console.log(
+          `[Redis] User ${userId} : Refresh Token Saved Successfully.`
+        );
+      });
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed In Successfully.",
       data: {
         userId: userId,
         accessToken: token,
+        refreshToken: refresh,
       },
     });
   } catch (err) {
@@ -87,6 +102,7 @@ authController.login = async (req, res) => {
   }
 };
 
+// 소셜 로그인
 authController.loginKakao = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -143,10 +159,12 @@ authController.loginKakao = async (req, res) => {
     const userId = user.id;
     const userNickname = user.nickname;
 
-    // accessToken 발급
-    const token = getJWT({ userId, userNickname, email });
+    // accessToken & refreshToken 발급
+    const token = getJWT({ userId, nickname, email });
+    const refresh = getRefresh({ userId, nickname, email });
 
-    // Redis 내 토큰 정보 저장 (1시간)
+    // Redis 내 토큰 정보 저장
+    // A. accessToken (1 h)
     await redisCli
       .set(token, String(userId), {
         EX: 60 * 60,
@@ -154,14 +172,25 @@ authController.loginKakao = async (req, res) => {
       .then(() => {
         console.log(`[Redis] User ${userId} : Token Saved Successfully.`);
       });
+    // B. refreshToken (14 d)
+    await redisCli
+      .set(`${userId}refresh`, refresh, {
+        EX: 60 * 60 * 24 * 14,
+      })
+      .then(() => {
+        console.log(
+          `[Redis] User ${userId} : Refresh Token Saved Successfully.`
+        );
+      });
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed In Successfully.",
       data: {
         userId: userId,
         accessToken: token,
+        refreshToken: refresh,
       },
     });
   } catch (err) {
@@ -182,19 +211,25 @@ authController.loginKakao = async (req, res) => {
   }
 };
 
+// 로그아웃
 authController.logout = async (req, res) => {
   try {
-    // Redis 내 accessToken 정보 삭제
+    // Redis 내 accessToken, refreshToken 정보 삭제
     const token = req.token;
     const userId = await redisCli.get(token);
     await redisCli.del(token).then(() => {
       console.log(`[Redis] User ${userId} : Token Removed Successfully.`);
     });
+    await redisCli.del(`${userId}refresh`).then(() => {
+      console.log(
+        `[Redis] User ${userId} : Refresh Token Removed Successfully.`
+      );
+    });
 
     console.log("Updated Successfully.");
 
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed Out Successfully.",
     });
   } catch (err) {
@@ -206,6 +241,7 @@ authController.logout = async (req, res) => {
   }
 };
 
+// 이메일 인증코드 요청
 authController.requestEmailCode = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -237,7 +273,7 @@ authController.requestEmailCode = async (req, res) => {
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Sent Successfully.",
     });
   } catch (err) {
@@ -260,6 +296,7 @@ authController.requestEmailCode = async (req, res) => {
   }
 };
 
+// 이메일 인증코드 확인
 authController.verifyEmailCode = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -288,7 +325,7 @@ authController.verifyEmailCode = async (req, res) => {
 
     // 응답 전달
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Authorized Successfully.",
     });
   } catch (err) {
@@ -309,6 +346,7 @@ authController.verifyEmailCode = async (req, res) => {
   }
 };
 
+// 이메일 가입
 authController.joinEmail = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
@@ -364,7 +402,7 @@ authController.joinEmail = async (req, res) => {
 
     // 응답 전송
     res.status(200).send({
-      status: "Success",
+      status: 200,
       message: "Signed In Successfully.",
       data: {
         userId: user.id,
@@ -388,6 +426,57 @@ authController.joinEmail = async (req, res) => {
     res.status(errCode).send({
       status: errCode,
       message: message,
+    });
+  }
+};
+
+// refresh token
+authController.refresh = async (req, res) => {
+  try {
+    // 새로운 access token / refresh token 발급
+    const userId = req.userId;
+    const nickname = req.nickname;
+    const email = req.email;
+    const payload = { userId, nickname, email };
+
+    const newAccess = getJWT(payload);
+    const newRefresh = getRefresh(payload);
+
+    // Redis 내 토큰 정보 저장
+    // A. accessToken 1 h
+    await redisCli
+      .set(newAccess, String(userId), {
+        EX: 60 * 60,
+      })
+      .then(() => {
+        console.log(`[Redis] User ${userId} : Token Saved Successfully.`);
+      });
+
+    // B. refreshToken 14 d
+    await redisCli
+      .set(`${userId}refresh`, newRefresh, {
+        EX: 60 * 60 * 24 * 14,
+      })
+      .then(() => {
+        console.log(
+          `[Redis] User ${userId} : Refresh Token Updated Successfully.`
+        );
+      });
+
+    // 응답 전달
+    res.status(200).send({
+      status: 200,
+      message: "Token Updated Successfully.",
+      data: {
+        accessToken: newAccess,
+        refreshToken: newRefresh,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({
+      status: 500,
+      message: "Server Error.",
     });
   }
 };
