@@ -11,6 +11,6 @@ router.post("/logout", validateAccessToken, authController.logout);
 router.post("/email", authController.requestEmailCode);
 router.post("/email/code", authController.verifyEmailCode);
 router.post("/join", authController.joinEmail);
-router.post("/refresh", validateRefreshToken, authController.refresh);
+router.get("/refresh", validateRefreshToken, authController.refresh);
 
 export default router;
