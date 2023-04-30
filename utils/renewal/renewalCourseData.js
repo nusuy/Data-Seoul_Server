@@ -70,7 +70,7 @@ const renewalCourseData = async (isOffline, recentLog) => {
       // B. 최근 갱신 이력이 존재하는 경우
       //     -> 데이터 등록 날짜보다 갱신 날짜가 더 이전이어야 데이터 저장
       // C. 5년 이상된 데이터일 경우 저장하지 않음
-      const data = insertData(item, type);
+      const data = insertData(current, item, type);
       const isTest =
         data["title"].toLowerCase() === "test" || data["title"] === "테스트";
       const insertDate = parseDate(item["INSERT_DT"], false);

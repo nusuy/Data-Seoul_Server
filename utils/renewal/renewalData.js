@@ -3,14 +3,35 @@ import models from "../../models/index.js";
 import checkRecentLog from "./checkRecentLog.js";
 import renewalCourseData from "./renewalCourseData.js";
 import renewalDeptData from "./renewalDeptData.js";
+import matchDept from "./matchDept.js";
 
 const System = models.System;
 dotenv.config();
 
 const renewalData = async () => {
   let recentLog, now;
-  const error = { off: false, on: false, dept: false };
+  const error = { off: false, on: false, dept: false, matchDept: false };
   const newLength = { off: 0, on: 0, dept: 0 };
+
+  // Dept
+  try {
+    now = new Date();
+    recentLog = await checkRecentLog("dept");
+
+    if (recentLog.needUpdate) {
+      await renewalDeptData(recentLog).then((res) => {
+        newLength.dept = res;
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    if (recentLog.needUpdate) {
+      await System.destroy({
+        where: { id: recentLog.newLogId },
+      });
+    }
+    error.dept = true;
+  }
 
   // Offline Course
   try {
@@ -54,30 +75,21 @@ const renewalData = async () => {
     error.on = true;
   }
 
-  // Dept
+  // dept 데이터 결합 (새로운 데이터가 있는 경우에만)
   try {
-    now = new Date();
-    recentLog = await checkRecentLog("dept");
-
-    if (recentLog.needUpdate) {
-      await renewalDeptData(recentLog).then((res) => {
-        newLength.dept = res;
-      });
+    if (newLength.dept || newLength.off || newLength.on) {
+      await matchDept(newLength);
+      error.matchDept = true;
     }
   } catch (err) {
     console.error(err);
-    if (recentLog.needUpdate) {
-      await System.destroy({
-        where: { id: recentLog.newLogId },
-      });
-    }
-    error.dept = true;
   }
 
   const updateResult = {};
   updateResult.off = error.off ? "failed" : "success";
   updateResult.on = error.on ? "failed" : "success";
   updateResult.dept = error.dept ? "failed" : "success";
+  updateResult.matchDept = error.matchDept ? "failed" : "success";
 
   return { updateResult, newLength };
 };

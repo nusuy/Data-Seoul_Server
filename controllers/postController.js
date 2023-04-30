@@ -53,7 +53,7 @@ postController.readList = async (req, res) => {
     });
 
     // 목록이 없을 경우
-    if (list.length === 0) {
+    if (!list.length) {
       res.status(200).send({
         status: 200,
         message: "No Result.",
@@ -329,6 +329,7 @@ postController.editPost = async (req, res) => {
       {
         title: title,
         content: content,
+        isEdited: true,
       },
       {
         where: {
