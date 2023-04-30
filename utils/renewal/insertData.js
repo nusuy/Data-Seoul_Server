@@ -26,7 +26,7 @@ const insertData = (now, data, type) => {
       result.deptLat = lat;
       result.deptLng = lng;
       result.capacity = data["CAPACITY"] === "" ? 0 : Number(data["CAPACITY"]);
-      result.insertData = now;
+      result.insertDate = now;
       break;
     case "on":
       const { applyStart, applyEnd } = parseOnlineApplyDate(
@@ -44,7 +44,7 @@ const insertData = (now, data, type) => {
       result.deptLng = lng;
       result.isFree = data["FEE"] === "무료" ? true : false;
       result.isAvailable = data["STATUS"] === "ING" ? true : false;
-      result.insertData = now;
+      result.insertDate = now;
       break;
     case "dept":
       result.name = checkNull(data["DEPT_NM"]);

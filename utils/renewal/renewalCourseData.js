@@ -63,13 +63,12 @@ const renewalCourseData = async (isOffline, recentLog) => {
   // 2. 데이터 정제
   const result = [];
   const current = recentLog.now;
-  const afterDate = new Date(current.setFullYear(current.getFullYear() - 5));
   dataResult.map((set) => {
     set.map((item) => {
       // A. test 데이터일 경우 저장하지 않음
       // B. 최근 갱신 이력이 존재하는 경우
       //     -> 데이터 등록 날짜보다 갱신 날짜가 더 이전이어야 데이터 저장
-      // C. 5년 이상된 데이터일 경우 저장하지 않음
+      // C. 올해 데이터가 아닐 경우 저장하지 않음
       const data = insertData(current, item, type);
       const isTest =
         data["title"].toLowerCase() === "test" || data["title"] === "테스트";
@@ -87,7 +86,10 @@ const renewalCourseData = async (isOffline, recentLog) => {
 
       if (
         (!isTest && isNew && isDateNull) ||
-        (!isTest && isNew && !isDateNull && courseDate >= afterDate)
+        (!isTest &&
+          isNew &&
+          !isDateNull &&
+          courseDate.getFullYear() === current.getFullYear())
       ) {
         result.push(data);
       }
