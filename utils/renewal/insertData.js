@@ -5,7 +5,7 @@ import {
   parseOnlineApplyDate,
 } from "./checkValue.js";
 
-const insertData = (data, type) => {
+const insertData = (now, data, type) => {
   const result = {};
   const latData = type === "dept" ? data["MAP_LAT"] : data["MAP_LATITUDE"];
   const lngData = type === "dept" ? data["MAP_LNG"] : data["MAP_LONGITUDE"];
@@ -13,6 +13,7 @@ const insertData = (data, type) => {
 
   switch (type) {
     case "off":
+      result.courseCode = data["COURSE_ID"];
       result.type = type;
       result.title = data["COURSE_NM"];
       result.url = checkNull(data["COURSE_APPLY_URL"]);
@@ -25,15 +26,17 @@ const insertData = (data, type) => {
       result.deptLat = lat;
       result.deptLng = lng;
       result.capacity = data["CAPACITY"] === "" ? 0 : Number(data["CAPACITY"]);
+      result.insertData = now;
       break;
     case "on":
       const { applyStart, applyEnd } = parseOnlineApplyDate(
         data["COURSE_REQUEST_DT"]
       );
+      result.courseCode = data["COURSE_ID"];
       result.type = type;
       result.title = data["COURSE_NM"];
-      result.applyStartDate = parseDate(applyStart, true);
-      result.applyEndDate = parseDate(applyEnd, true);
+      result.applyStartDate = applyStart;
+      result.applyEndDate = applyEnd;
       result.startDate = checkNull(data["COURSE_DT"]);
       result.deptName = checkNull(data["DEPT_NAME"]);
       result.deptGu = checkNull(data["DEPT_GU"]);
@@ -41,6 +44,7 @@ const insertData = (data, type) => {
       result.deptLng = lng;
       result.isFree = data["FEE"] === "무료" ? true : false;
       result.isAvailable = data["STATUS"] === "ING" ? true : false;
+      result.insertData = now;
       break;
     case "dept":
       result.name = checkNull(data["DEPT_NM"]);

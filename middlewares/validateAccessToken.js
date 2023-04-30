@@ -19,6 +19,15 @@ function validateAccessToken(req, res, next) {
     jwt.verify(token, process.env.JWT_SECRET, async (err, user) => {
       // jwt 검증 과정에서 error 발생한 경우
       if (err) {
+        // token이 만료된 경우
+        if (err.name === "TokenExpiredError") {
+          return res.status(401).json({
+            status: 401,
+            message: "Token Expired.",
+          });
+        }
+
+        // token이 올바르지 않을 경우
         return res.status(401).json({
           status: 401,
           message: "Invalid Token.",

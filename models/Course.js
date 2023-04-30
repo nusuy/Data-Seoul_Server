@@ -2,6 +2,10 @@ const Course = (sequelize, DataTypes) => {
   const Course = sequelize.define(
     "Course",
     {
+      courseCode: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+      },
       type: {
         type: DataTypes.STRING(10),
         allowNull: false,
@@ -70,6 +74,10 @@ const Course = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: 0,
         comment: "offline only",
+      },
+      insertDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
       },
     },
     {
