@@ -60,10 +60,10 @@ const renewalDeptData = async (recentLog) => {
   // 2-1. 테스트 데이터 제외
   // 2-2. 데이터 중복 여부 검사 후 새로운 데이터만 저장
   const result = [];
-
+  const current = recentLog.now;
   for (const set of dataResult) {
     for (const item of set) {
-      const data = insertData(item, "dept");
+      const data = insertData(current, item, "dept");
       const isTest =
         data["name"].toLowerCase() === "test" || data["name"] === "테스트";
       if (!isTest && !(await checkDuplicate(data))) {

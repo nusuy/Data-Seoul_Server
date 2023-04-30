@@ -72,8 +72,8 @@ export const parseOnlineApplyDate = (str) => {
   if (str === "" || !str) {
     return null;
   }
-  const startDate = str.split("~")[0];
-  const endDate = str.split("~")[1];
+  const applyStart = str.split("~")[0];
+  const applyEnd = str.split("~")[1];
 
-  return { startDate, endDate };
+  return { applyStart, applyEnd };
 };
