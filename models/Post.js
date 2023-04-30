@@ -25,6 +25,11 @@ const Post = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 0,
       },
+      isEdited: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       charset: "utf8",
