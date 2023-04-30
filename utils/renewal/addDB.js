@@ -7,6 +7,7 @@ const addDB = async (data, type) => {
   switch (type) {
     case "off":
       await Course.create({
+        courseCode: data["courseCode"],
         type: data["type"],
         title: data["title"],
         url: data["url"],
@@ -19,11 +20,12 @@ const addDB = async (data, type) => {
         deptLat: data["deptLat"],
         deptLng: data["deptLng"],
         capacity: data["capacity"],
-        isAvailable: data["isAvailable"],
+        insertDate: data["insertDate"],
       });
       break;
     case "on":
       await Course.create({
+        courseCode: data["courseCode"],
         type: data["type"],
         title: data["title"],
         url: data["url"],
@@ -36,6 +38,7 @@ const addDB = async (data, type) => {
         deptLng: data["deptLng"],
         isFree: data["isFree"],
         isAvailable: data["isAvailable"],
+        insertDate: data["insertDate"],
       });
       break;
     case "dept":
