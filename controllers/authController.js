@@ -157,7 +157,6 @@ authController.loginKakao = async (req, res) => {
     }
 
     const userId = user.id;
-    const userNickname = user.nickname;
 
     // accessToken & refreshToken 발급
     const token = getJWT({ userId, nickname, email });
@@ -264,9 +263,17 @@ authController.requestEmailCode = async (req, res) => {
       if (user.nickname) {
         throw new Error("Email Already Exists.");
       } else {
+        // 이전에 인증 시도 했으나 가입 완료하지 않은 경우
         await User.destroy({ where: { email: email } });
       }
     }
+
+    // DB 저장
+    await User.create({
+      email: email,
+      isSocial: false,
+      isAuthorized: false,
+    });
 
     // 인증코드 전송
     sendEmailCode(email);
@@ -306,9 +313,28 @@ authController.verifyEmailCode = async (req, res) => {
 
     const code = await redisCli.get(email);
 
+    // 인증 요청한 이메일이 아닐 경우
+    const user = await User.findOne({
+      where: {
+        email: email,
+      },
+    }).then((res) => {
+      return res;
+    });
+
+    // 인증코드를 요청한 이메일이 아닐 경우
+    if (!user) {
+      throw new Error("Invalid Email.");
+    }
+
+    // 이미 인증 완료된 이메일인 경우
+    if (user["isAuthorized"]) {
+      throw new Error("Invalid Email.");
+    }
+
     // 인증코드 내역이 존재하지 않는 이메일일 경우
     if (!code) {
-      throw new Error("Invalid Email.");
+      throw new Error("Code Expired");
     }
 
     // 코드가 일치하지 않을 경우
@@ -316,12 +342,13 @@ authController.verifyEmailCode = async (req, res) => {
       throw new Error("Invalid Code.");
     }
 
-    // DB 저장
-    await User.create({
-      email: email,
-      isSocial: false,
-      isAuthorized: true,
-    });
+    // DB 업데이트
+    await User.update(
+      {
+        isAuthorized: true,
+      },
+      { where: { email: email } }
+    );
 
     // 응답 전달
     res.status(200).send({
@@ -331,12 +358,15 @@ authController.verifyEmailCode = async (req, res) => {
   } catch (err) {
     console.error(err);
 
-    if (err.message === "Invalid Code.") {
-      message = err.message;
-      errCode = 401;
-    } else if (err.message === "Invalid Email.") {
+    if (err.message === "Invalid Email.") {
       message = err.message;
       errCode = 400;
+    } else if (err.message === "Invalid Code.") {
+      message = err.message;
+      errCode = 401;
+    } else if (err.message === "Code Expired.") {
+      message = err.message;
+      errCode = 403;
     }
 
     res.status(errCode).send({
@@ -403,7 +433,7 @@ authController.joinEmail = async (req, res) => {
     // 응답 전송
     res.status(200).send({
       status: 200,
-      message: "Signed In Successfully.",
+      message: "Joined Successfully.",
       data: {
         userId: user.id,
       },
