@@ -14,39 +14,149 @@ courseController.readList = async (req, res) => {
     const { updateResult, newLength } = await renewalData();
 
     const type = req.params.type; // all / off / on
+    const order = req.params.order; // insert / like / end
     const types = ["all", "off", "on"];
-    let isValid = false;
+    const orders = ["insert", "like", "end"];
+    let isValidType = false;
+    let isValidOrder = false;
     let data = null;
     const courseList = [];
 
+    // params 값 유효성 검사
     types.map((item) => {
       if (item === type) {
-        isValid = true;
+        isValidType = true;
+      }
+    });
+    orders.map((item) => {
+      if (item === order) {
+        isValidOrder = true;
       }
     });
 
-    if (!isValid) {
+    if (!isValidType) {
       throw new Error("Invalid type.");
+    }
+    if (!isValidType) {
+      throw new Error("Invalid order.");
     }
 
     // 모든 강좌 데이터 리스트 조회
     if (type === "all") {
-      data = await Course.findAll({
-        attributes: ["type", "title", "deptName", "id"],
-        order: [["applyStartDate", "DESC"]],
-      }).then((res) => {
-        return res;
-      });
+      switch (order) {
+        case "insert":
+          data = await Course.findAll({
+            attributes: [
+              "type",
+              "id",
+              "title",
+              "applyStartDate",
+              "applyEndDate",
+              "isFree",
+              "category",
+            ],
+            order: [["insertDate", "DESC"]],
+          }).then((res) => {
+            return res;
+          });
+          break;
+        case "like":
+          data = await Course.findAll({
+            attributes: [
+              "type",
+              "id",
+              "title",
+              "applyStartDate",
+              "applyEndDate",
+              "isFree",
+              "category",
+            ],
+            order: [
+              ["likeCount", "DESC"],
+              ["insertDate", "DESC"],
+            ],
+          }).then((res) => {
+            return res;
+          });
+          break;
+        case "end":
+          data = await Course.findAll({
+            attributes: [
+              "type",
+              "id",
+              "title",
+              "applyStartDate",
+              "applyEndDate",
+              "isFree",
+              "category",
+            ],
+            order: [["applyEndDate", "ASC"]],
+          }).then((res) => {
+            return res;
+          });
+          break;
+      }
     } else {
-      data = await Course.findAll({
-        attributes: ["id", "title", "deptName"],
-        where: {
-          type: type,
-        },
-        order: [["applyStartDate", "DESC"]],
-      }).then((res) => {
-        return res;
-      });
+      // off / on 개별 조회
+      switch (order) {
+        case "insert":
+          data = await Course.findAll({
+            attributes: [
+              "id",
+              "title",
+              "applyStartDate",
+              "applyEndDate",
+              "isFree",
+              "category",
+            ],
+            where: {
+              type: type,
+            },
+            order: [["insertDate", "DESC"]],
+          }).then((res) => {
+            return res;
+          });
+          break;
+        case "like":
+          data = await Course.findAll({
+            attributes: [
+              "id",
+              "title",
+              "applyStartDate",
+              "applyEndDate",
+              "isFree",
+              "category",
+            ],
+            where: {
+              type: type,
+            },
+            order: [
+              ["likeCount", "DESC"],
+              ["insertDate", "DESC"],
+            ],
+          }).then((res) => {
+            return res;
+          });
+          break;
+        case "end":
+          data = await Course.findAll({
+            attributes: [
+              "id",
+              "title",
+              "applyStartDate",
+              "applyEndDate",
+              "isFree",
+              "category",
+            ],
+            where: {
+              type: type,
+            },
+            order: [["applyEndDate", "ASC"]],
+          }).then((res) => {
+            return res;
+          });
+          break;
+      }
     }
 
     // 데이터 정제
@@ -144,6 +254,9 @@ courseController.addLike = async (req, res) => {
         courseId: courseId,
       });
       isLiked = true;
+
+      // 강좌 관심 설정 수 증가
+      await Course.increment({ likeCount: 1 }, { where: { id: courseId } });
     } else {
       // 찜 해제
       await Wishlist.destroy({
@@ -152,6 +265,9 @@ courseController.addLike = async (req, res) => {
           courseId: courseId,
         },
       });
+
+      // 강좌 관심 설정 수 감소
+      await Course.increment({ likeCount: -1 }, { where: { id: courseId } });
     }
 
     res.status(200).send({
