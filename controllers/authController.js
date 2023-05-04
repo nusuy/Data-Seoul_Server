@@ -329,7 +329,7 @@ authController.verifyEmailCode = async (req, res) => {
 
     // 이미 인증 완료된 이메일인 경우
     if (user["isAuthorized"]) {
-      throw new Error("Invalid Email.");
+      throw new Error("Email Already verified.");
     }
 
     // 인증코드 내역이 존재하지 않는 이메일일 경우
@@ -359,6 +359,9 @@ authController.verifyEmailCode = async (req, res) => {
     console.error(err);
 
     if (err.message === "Invalid Email.") {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "Email Already verified.") {
       message = err.message;
       errCode = 400;
     } else if (err.message === "Invalid Code.") {
