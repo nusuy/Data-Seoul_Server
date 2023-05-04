@@ -327,13 +327,14 @@ authController.verifyEmailCode = async (req, res) => {
       throw new Error("Invalid Email.");
     }
 
-    // 이미 인증 완료된 이메일인 경우
-    if (user["isAuthorized"]) {
-      throw new Error("Invalid Email.");
+    // 이미 가입 완료된 이메일인 경우
+    if (user["nickname"]) {
+      throw new Error("Email Already Exists.");
     }
 
-    // 인증코드 내역이 존재하지 않는 이메일일 경우
+    // 인증코드 내역이 존재하지 않는 이메일일 경우 (인증코드 만료된 경우)
     if (!code) {
+      await User.destroy({ where: { email: email } });
       throw new Error("Code Expired");
     }
 
@@ -359,6 +360,9 @@ authController.verifyEmailCode = async (req, res) => {
     console.error(err);
 
     if (err.message === "Invalid Email.") {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "Email Already Exists.") {
       message = err.message;
       errCode = 400;
     } else if (err.message === "Invalid Code.") {
