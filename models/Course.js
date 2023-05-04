@@ -57,6 +57,15 @@ const Course = (sequelize, DataTypes) => {
         type: DataTypes.DECIMAL(17, 14),
         allowNull: true,
       },
+      insertDate: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
+      likeCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       isAvailable: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -74,10 +83,6 @@ const Course = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: 0,
         comment: "offline only",
-      },
-      insertDate: {
-        type: DataTypes.DATE,
-        allowNull: false,
       },
     },
     {

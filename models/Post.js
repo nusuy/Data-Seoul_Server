@@ -15,11 +15,6 @@ const Post = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
-      likeCount: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-      },
       viewCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
