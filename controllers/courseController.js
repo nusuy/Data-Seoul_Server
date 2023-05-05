@@ -54,7 +54,10 @@ courseController.readList = async (req, res) => {
     // order option
     switch (order) {
       case "new":
-        orderOption = [["insertDate", "DESC"]];
+        orderOption = [
+          ["insertDate", "DESC"],
+          ["id", "DESC"],
+        ];
         break;
       case "like":
         orderOption = [
@@ -288,6 +291,42 @@ courseController.addLike = async (req, res) => {
 };
 
 // 최신 강좌 목록 조회
-courseController.readNew = async (req, res) => {};
+courseController.readNew = async (req, res) => {
+  let message = "Server Error.";
+  let errCode = 500;
+  try {
+    // 데이터 조회
+    const course = await Course.findAll({
+      attributes: [
+        "type",
+        "id",
+        "title",
+        "applyStartDate",
+        "applyEndDate",
+        "isFree",
+        "category",
+      ],
+      limit: 10,
+      order: [
+        ["insertDate", "DESC"],
+        ["applyStartDate", "DESC"],
+      ],
+    }).then((res) => {
+      return res;
+    });
+
+    // 응답 전송
+    res.status(200).send({
+      status: 200,
+      data: course,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(errCode).send({
+      status: errCode,
+      message: message,
+    });
+  }
+};
 
 export default courseController;
