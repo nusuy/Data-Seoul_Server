@@ -35,6 +35,7 @@ const insertData = (now, data, type) => {
       result.courseCode = data["COURSE_ID"];
       result.type = type;
       result.title = data["COURSE_NM"];
+      result.url = checkNull(data["PRE_URL"]);
       result.applyStartDate = applyStart;
       result.applyEndDate = applyEnd;
       result.startDate = checkNull(data["COURSE_DT"]);

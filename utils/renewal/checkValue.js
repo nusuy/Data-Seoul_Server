@@ -1,3 +1,9 @@
+const getIsoString = (str) => {
+  const date = new Date(str);
+
+  return date.toISOString().substring(0, 10);
+};
+
 export const checkNull = (value) => {
   return value === "" ? null : value;
 };
@@ -72,8 +78,8 @@ export const parseOnlineApplyDate = (str) => {
   if (str === "" || !str) {
     return null;
   }
-  const applyStart = str.split("~")[0];
-  const applyEnd = str.split("~")[1];
+  const applyStart = getIsoString(str.split("~")[0]);
+  const applyEnd = getIsoString(str.split("~")[1]);
 
   return { applyStart, applyEnd };
 };
