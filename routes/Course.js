@@ -4,8 +4,13 @@ import validateAccessToken from "../middlewares/validateAccessToken.js";
 
 const router = express.Router();
 
-router.get("/:type/:order", courseController.readList);
-router.get("/detail/:courseId", courseController.readDetail);
+router.get("/:type", courseController.readList);
+router.get(
+  "/detail/:courseId",
+  validateAccessToken,
+  courseController.readDetail
+);
 router.post("/:courseId", validateAccessToken, courseController.addLike);
+router.get("/new/:type", courseController.readNew);
 
 export default router;

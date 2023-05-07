@@ -74,8 +74,7 @@ const Course = (sequelize, DataTypes) => {
       },
       isFree: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
+        allowNull: true,
         comment: "online only",
       },
       capacity: {

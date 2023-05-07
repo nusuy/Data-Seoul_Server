@@ -11,7 +11,7 @@ courseController.readList = async (req, res) => {
   let errCode = 500;
   try {
     const type = req.params.type; // all / off / on
-    const order = req.params.order; // insert / like / end
+    const order = req.query.order; // insert / like / end
     const filter = req.query.filter;
     const types = ["all", "off", "on"];
     const orders = ["new", "like", "end"];
@@ -56,7 +56,7 @@ courseController.readList = async (req, res) => {
       case "new":
         orderOption = [
           ["insertDate", "DESC"],
-          ["id", "DESC"],
+          ["applyStartDate", "DESC"],
         ];
         break;
       case "like":
@@ -196,6 +196,10 @@ courseController.readDetail = async (req, res) => {
   try {
     const courseId = req.params.courseId;
 
+    if (!courseId) {
+      throw new Error("CourseId Required.");
+    }
+
     // 데이터 조회
     const data = await Course.findOne({
       where: {
@@ -209,14 +213,39 @@ courseController.readDetail = async (req, res) => {
       throw new Error("Invalid CourseId.");
     }
 
+    const result = {};
+    result.courseId = data["id"];
+    result.courseCode = data["courseCode"];
+    result.type = data["type"];
+    result.title = data["title"];
+    result.category = data["category"];
+    result.url = data["url"];
+    result.applyStartDate = data["applyStartDate"];
+    result.applyEndDate = data["applyEndDate"];
+    result.startDate = data["startDate"];
+    result.endDate = data["endDate"];
+    result.deptId = data["deptId"];
+    result.deptName = data["deptName"];
+    result.deptGu = data["deptGu"];
+    result.deptLat = data["deptLat"] ? Number(data["deptLat"]) : null;
+    result.deptLng = data["deptLng"] ? Number(data["deptLng"]) : null;
+    result.insertDate = data["insertDate"];
+    result.likeCount = data["likeCount"];
+    result.isAvailable = data["isAvailable"];
+    result.isFree = data["isFree"];
+    result.capacity = data["capacity"];
+
     res.status(200).send({
       status: 200,
-      data: data["dataValues"],
+      data: result,
     });
   } catch (err) {
     console.error(err);
 
-    if (err.message === "Invalid CourseId.") {
+    if (err.message === "CourseId Required.") {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "Invalid CourseId.") {
       message = err.message;
       errCode = 400;
     }
@@ -236,6 +265,10 @@ courseController.addLike = async (req, res) => {
     const userId = req.user;
     const courseId = req.params.courseId;
     let isLiked = false;
+
+    if (!courseId) {
+      throw new Error("CourseId Required.");
+    }
 
     // 찜 여부 검사
     const data = await Wishlist.findOne({
@@ -278,8 +311,14 @@ courseController.addLike = async (req, res) => {
   } catch (err) {
     console.error(err);
 
-    if (err.name === "SequelizeDatabaseError") {
+    if (
+      err.name === "SequelizeDatabaseError" ||
+      err.name === "SequelizeForeignKeyConstraintError"
+    ) {
       message = "Invalid CourseId.";
+      errCode = 400;
+    } else if (err.message === "CourseId Required.") {
+      message = err.message;
       errCode = 400;
     }
 
@@ -295,6 +334,12 @@ courseController.readNew = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
+    const type = req.params.type;
+
+    if (type !== "off" && type !== "on") {
+      throw new Error("Invalid type.");
+    }
+
     // 데이터 조회
     const course = await Course.findAll({
       attributes: [
@@ -306,7 +351,10 @@ courseController.readNew = async (req, res) => {
         "isFree",
         "category",
       ],
-      limit: 10,
+      limit: 5,
+      where: {
+        type: type,
+      },
       order: [
         ["insertDate", "DESC"],
         ["applyStartDate", "DESC"],
