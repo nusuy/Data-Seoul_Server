@@ -10,46 +10,103 @@ courseController.readList = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
+    const type = req.params.type; // all / off / on
+    const order = req.query.order; // insert / like / end
+    const filter = req.query.filter;
+    const types = ["all", "off", "on"];
+    const orders = ["new", "like", "end"];
+    const filters = ["upcoming", "ongoing", "done"];
+    let orderOption = null;
+    let isValidType = false;
+    let isValidOrder = false;
+    let isValidFilter = false;
+    let data = null;
+    const courseList = [];
+    const filteredCourseList = [];
+
     // 데이터 갱신
     const { updateResult, newLength } = await renewalData();
 
-    const type = req.params.type; // all / off / on
-    const types = ["all", "off", "on"];
-    let isValid = false;
-    let data = null;
-    const courseList = [];
-
+    // type 옵션 값 유효성 검사
     types.map((item) => {
       if (item === type) {
-        isValid = true;
+        isValidType = true;
       }
     });
 
-    if (!isValid) {
+    // type 값이 올바르지 않은 경우
+    if (!isValidType) {
       throw new Error("Invalid type.");
     }
 
-    // 모든 강좌 데이터 리스트 조회
+    // order 옵션 값 유효성 검사
+    orders.map((item) => {
+      if (item === order) {
+        isValidOrder = true;
+      }
+    });
+
+    // order 값이 올바르지 않은 경우
+    if (!isValidOrder) {
+      throw new Error("Invalid order.");
+    }
+
+    // order option
+    switch (order) {
+      case "new":
+        orderOption = [
+          ["insertDate", "DESC"],
+          ["applyStartDate", "DESC"],
+        ];
+        break;
+      case "like":
+        orderOption = [
+          ["likeCount", "DESC"],
+          ["insertDate", "DESC"],
+        ];
+        break;
+      case "end":
+        orderOption = [["applyEndDate", "ASC"]];
+        break;
+    }
+
+    // 강좌 데이터 리스트 조회
     if (type === "all") {
       data = await Course.findAll({
-        attributes: ["type", "title", "deptName", "id"],
-        order: [["applyStartDate", "DESC"]],
+        attributes: [
+          "type",
+          "id",
+          "title",
+          "applyStartDate",
+          "applyEndDate",
+          "isFree",
+          "category",
+        ],
+        order: orderOption,
       }).then((res) => {
         return res;
       });
     } else {
+      // off / on 개별 조회
       data = await Course.findAll({
-        attributes: ["id", "title", "deptName"],
+        attributes: [
+          "type",
+          "id",
+          "title",
+          "applyStartDate",
+          "applyEndDate",
+          "isFree",
+          "category",
+        ],
         where: {
           type: type,
         },
-        order: [["applyStartDate", "DESC"]],
+        order: orderOption,
       }).then((res) => {
         return res;
       });
     }
 
-    // 데이터 정제
     if (!data) {
       throw new Error("Database connection error.");
     }
@@ -57,15 +114,68 @@ courseController.readList = async (req, res) => {
       courseList.push(item["dataValues"]);
     });
 
+    // filter
+    if (filter) {
+      // filter 옵션 값 유효성 검사
+      filters.map((item) => {
+        if (item === filter) {
+          isValidFilter = true;
+        }
+      });
+
+      if (!isValidFilter) {
+        throw new Error("Invalid filter.");
+      }
+
+      const now = new Date();
+      now.setHours(9);
+      now.setMinutes(0);
+      now.setSeconds(0);
+
+      switch (filter) {
+        case "upcoming":
+          courseList.map((item) => {
+            if (new Date(item["applyStartDate"]) > now) {
+              filteredCourseList.push(item);
+            }
+          });
+          break;
+        case "ongoing":
+          courseList.map((item) => {
+            if (
+              new Date(item["applyStartDate"]) <= now &&
+              new Date(item["applyEndDate"]) >= now
+            ) {
+              filteredCourseList.push(item);
+            }
+          });
+          break;
+        case "done":
+          courseList.map((item) => {
+            if (new Date(item["applyEndDate"]) < now) {
+              filteredCourseList.push(item);
+            }
+          });
+          break;
+      }
+    }
+
+    // 응답 전송
     res.status(200).send({
       status: 200,
       message: `[Update Result] Offline: ${updateResult.off} - ${newLength.off}, Online: ${updateResult.on} - ${newLength.on}, Dept: ${updateResult.dept} - ${newLength.dept}`,
-      data: courseList,
+      data: filter ? filteredCourseList : courseList,
     });
   } catch (err) {
     console.error(err);
 
     if (err.message === "Invalid type.") {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "Invalid order.") {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "Invalid filter.") {
       message = err.message;
       errCode = 400;
     } else if (err.message === "Database connection error.") {
@@ -86,6 +196,10 @@ courseController.readDetail = async (req, res) => {
   try {
     const courseId = req.params.courseId;
 
+    if (!courseId) {
+      throw new Error("CourseId Required.");
+    }
+
     // 데이터 조회
     const data = await Course.findOne({
       where: {
@@ -99,14 +213,39 @@ courseController.readDetail = async (req, res) => {
       throw new Error("Invalid CourseId.");
     }
 
+    const result = {};
+    result.courseId = data["id"];
+    result.courseCode = data["courseCode"];
+    result.type = data["type"];
+    result.title = data["title"];
+    result.category = data["category"];
+    result.url = data["url"];
+    result.applyStartDate = data["applyStartDate"];
+    result.applyEndDate = data["applyEndDate"];
+    result.startDate = data["startDate"];
+    result.endDate = data["endDate"];
+    result.deptId = data["deptId"];
+    result.deptName = data["deptName"];
+    result.deptGu = data["deptGu"];
+    result.deptLat = data["deptLat"] ? Number(data["deptLat"]) : null;
+    result.deptLng = data["deptLng"] ? Number(data["deptLng"]) : null;
+    result.insertDate = data["insertDate"];
+    result.likeCount = data["likeCount"];
+    result.isAvailable = data["isAvailable"];
+    result.isFree = data["isFree"];
+    result.capacity = data["capacity"];
+
     res.status(200).send({
       status: 200,
-      data: data["dataValues"],
+      data: result,
     });
   } catch (err) {
     console.error(err);
 
-    if (err.message === "Invalid CourseId.") {
+    if (err.message === "CourseId Required.") {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "Invalid CourseId.") {
       message = err.message;
       errCode = 400;
     }
@@ -127,6 +266,10 @@ courseController.addLike = async (req, res) => {
     const courseId = req.params.courseId;
     let isLiked = false;
 
+    if (!courseId) {
+      throw new Error("CourseId Required.");
+    }
+
     // 찜 여부 검사
     const data = await Wishlist.findOne({
       where: {
@@ -144,6 +287,9 @@ courseController.addLike = async (req, res) => {
         courseId: courseId,
       });
       isLiked = true;
+
+      // 강좌 관심 설정 수 증가
+      await Course.increment({ likeCount: 1 }, { where: { id: courseId } });
     } else {
       // 찜 해제
       await Wishlist.destroy({
@@ -152,6 +298,9 @@ courseController.addLike = async (req, res) => {
           courseId: courseId,
         },
       });
+
+      // 강좌 관심 설정 수 감소
+      await Course.increment({ likeCount: -1 }, { where: { id: courseId } });
     }
 
     res.status(200).send({
@@ -162,11 +311,65 @@ courseController.addLike = async (req, res) => {
   } catch (err) {
     console.error(err);
 
-    if (err.name === "SequelizeDatabaseError") {
+    if (
+      err.name === "SequelizeDatabaseError" ||
+      err.name === "SequelizeForeignKeyConstraintError"
+    ) {
       message = "Invalid CourseId.";
+      errCode = 400;
+    } else if (err.message === "CourseId Required.") {
+      message = err.message;
       errCode = 400;
     }
 
+    res.status(errCode).send({
+      status: errCode,
+      message: message,
+    });
+  }
+};
+
+// 최신 강좌 목록 조회
+courseController.readNew = async (req, res) => {
+  let message = "Server Error.";
+  let errCode = 500;
+  try {
+    const type = req.params.type;
+
+    if (type !== "off" && type !== "on") {
+      throw new Error("Invalid type.");
+    }
+
+    // 데이터 조회
+    const course = await Course.findAll({
+      attributes: [
+        "type",
+        "id",
+        "title",
+        "applyStartDate",
+        "applyEndDate",
+        "isFree",
+        "category",
+      ],
+      limit: 5,
+      where: {
+        type: type,
+      },
+      order: [
+        ["insertDate", "DESC"],
+        ["applyStartDate", "DESC"],
+      ],
+    }).then((res) => {
+      return res;
+    });
+
+    // 응답 전송
+    res.status(200).send({
+      status: 200,
+      data: course,
+    });
+  } catch (err) {
+    console.error(err);
     res.status(errCode).send({
       status: errCode,
       message: message,
