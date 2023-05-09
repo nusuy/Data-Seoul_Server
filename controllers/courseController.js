@@ -81,6 +81,7 @@ courseController.readList = async (req, res) => {
           "applyEndDate",
           "isFree",
           "category",
+          "capacity",
         ],
         order: orderOption,
       }).then((res) => {
@@ -97,6 +98,7 @@ courseController.readList = async (req, res) => {
           "applyEndDate",
           "isFree",
           "category",
+          "capacity",
         ],
         where: {
           type: type,
