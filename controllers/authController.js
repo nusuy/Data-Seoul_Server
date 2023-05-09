@@ -1,9 +1,12 @@
 import axios from "axios";
 import dotenv from "dotenv";
-import jwt from "jsonwebtoken";
 import models from "../models/index.js";
-import { createHashedPassword } from "../utils/hashPassword.js";
-import { verifyPassword } from "../utils/hashPassword.js";
+import {
+  createHashedPassword,
+  verifyPassword,
+  createHashedDeviceToken,
+  decodeHashedDeviceToken,
+} from "../utils/hash.js";
 import { getJWT, getRefresh } from "../utils/jwt.js";
 import redisCli from "../utils/redisCli.js";
 import sendEmailCode from "../utils/sendEmailCode.js";
@@ -26,6 +29,7 @@ authController.login = async (req, res) => {
   try {
     const email = req.body.email;
     const password = req.body.password;
+    const deviceToken = req.body.deviceToken;
 
     // 회원 조회
     const user = await User.findOne({
@@ -39,10 +43,14 @@ authController.login = async (req, res) => {
       throw new Error("Not a member.");
     }
 
+    if (!deviceToken) {
+      throw new Error("Device Token Required.");
+    }
+
     const userId = user.id;
     const nickname = user.nickname;
     const userPassword = user.password;
-    const salt = user.salt;
+    const salt = user.passwordSalt;
 
     // 비밀번호 확인
     // 비밀번호 불일치
@@ -90,6 +98,9 @@ authController.login = async (req, res) => {
     if (err.message === "Not a member.") {
       message = err.message;
       errCode = 401;
+    } else if (err.message === "Device Token Required.") {
+      message = err.message;
+      errCode = 400;
     } else if (err.message === "Incorrect Password.") {
       message = err.message;
       errCode = 403;
@@ -108,6 +119,7 @@ authController.loginKakao = async (req, res) => {
   let errCode = 500;
   try {
     const code = req.query.code;
+    const deviceToken = req.body.deviceToken;
 
     // 인가코드 전송
     const result = await axios.post(
@@ -134,7 +146,12 @@ authController.loginKakao = async (req, res) => {
       throw new Error("Email Consent Needed.");
     }
 
-    const nickname = profile.data.kakao_account.profile.nickname;
+    if (!deviceToken) {
+      throw new Error("Device Token Required.");
+    }
+
+    // deviceToken 저장
+    const { hashedToken, iv } = createHashedDeviceToken(deviceToken);
     const email = profile.data.kakao_account.email;
 
     // 회원조회
@@ -142,23 +159,141 @@ authController.loginKakao = async (req, res) => {
       where: { email: email },
     });
 
-    if (!user) {
+    if (user) {
+      const userId = user["id"];
+      const nickname = user["nickname"];
+
+      // device token 저장
+      await User.update(
+        {
+          deviceToken: hashedToken,
+          iv: iv,
+        },
+        { where: { id: userId } }
+      );
+
+      // accessToken & refreshToken 발급
+      const email = user["email"];
+      const token = getJWT({ userId, nickname, email });
+      const refresh = getRefresh({ userId, nickname, email });
+
+      // Redis 내 토큰 정보 저장
+      // A. accessToken (1 h)
+      await redisCli
+        .set(token, String(userId), {
+          EX: 60 * 60,
+        })
+        .then(() => {
+          console.log(`[Redis] User ${userId} : Token Saved Successfully.`);
+        });
+      // B. refreshToken (14 d)
+      await redisCli
+        .set(`${userId}refresh`, refresh, {
+          EX: 60 * 60 * 24 * 14,
+        })
+        .then(() => {
+          console.log(
+            `[Redis] User ${userId} : Refresh Token Saved Successfully.`
+          );
+        });
+
+      // 응답 전달
+      res.status(200).send({
+        status: 200,
+        message: "[Provider: Kakao] Signed In Successfully.",
+        data: {
+          userId: userId,
+          accessToken: token,
+          refreshToken: refresh,
+        },
+      });
+    } else {
       // 새로운 회원
-      await User.create({
+      user = await User.create({
         email: email,
-        nickname: nickname,
-        joinDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
         isSocial: true,
         isAuthorized: true,
+        deviceToken: hashedToken,
+        iv: iv,
+      }).then((res) => {
+        return res;
       });
-      user = await User.findOne({
-        where: { email: email },
+
+      // 응답 전달
+      res.status(200).send({
+        status: 200,
+        message:
+          "[Provider: Kakao] Authorized Successfully. (Nickname Required.)",
+        data: {
+          userId: user["id"],
+        },
       });
     }
+  } catch (err) {
+    console.error(err);
 
-    const userId = user.id;
+    if (err.message === "Email Consent Needed.") {
+      message = err.message;
+      errCode = 403;
+    } else if (err.message === "Device Token Required.") {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "Request failed with status code 400") {
+      message = "Invalid Authorization Code";
+      errCode = 403;
+    }
+
+    res.status(errCode).send({
+      status: errCode,
+      message: message,
+    });
+  }
+};
+
+// 소셜 로그인 - 닉네임 설정
+authController.setNickname = async (req, res) => {
+  let message = "Server Error.";
+  let errCode = 500;
+  try {
+    const userId = req.params.userId;
+    const nickname = req.body.nickname;
+
+    // 유저 조회
+    const user = await User.findOne(
+      {
+        attributes: ["id", "email", "nickname"],
+      },
+      { where: { id: userId } }
+    ).then((res) => {
+      return res;
+    });
+
+    // 유저 존재 여부 검사
+    if (!user) {
+      throw new Error("Invalid userId.");
+    }
+
+    // 유저 중복 검사
+    if (user["nickname"]) {
+      throw new Error("User already joined.");
+    }
+
+    // nickname 유효성 검사 (공백, 길이)
+    if (!nicknameValidation(nickname)) {
+      throw new Error("Invalid Nickname.");
+    }
+
+    // 데이터 저장
+    await User.update(
+      {
+        nickname: nickname,
+        joinDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
+      },
+      { where: { id: userId } }
+    );
 
     // accessToken & refreshToken 발급
+    const email = user["email"];
     const token = getJWT({ userId, nickname, email });
     const refresh = getRefresh({ userId, nickname, email });
 
@@ -194,14 +329,6 @@ authController.loginKakao = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-
-    if (err.message === "Email Consent Needed.") {
-      message = err.message;
-      errCode = 403;
-    } else if (err.message === "Request failed with status code 400") {
-      message = "Invalid Authorization Code";
-      errCode = 403;
-    }
 
     res.status(errCode).send({
       status: errCode,
@@ -421,7 +548,7 @@ authController.joinEmail = async (req, res) => {
         nickname: nickname,
         joinDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
         password: hashedPassword,
-        salt: salt,
+        passwordSalt: salt,
       },
       {
         where: {
