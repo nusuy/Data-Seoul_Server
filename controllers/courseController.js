@@ -352,6 +352,7 @@ courseController.readNew = async (req, res) => {
         "applyEndDate",
         "isFree",
         "category",
+        "capacity",
       ],
       limit: 5,
       where: {
