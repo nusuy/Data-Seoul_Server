@@ -146,6 +146,7 @@ postController.readDetail = async (req, res) => {
 
     result.publishDate = post["publishDate"];
     result.viewCount = post["viewCount"] + 1;
+    result.commentCount = await commentCount(post["id"]);
 
     // 조회 수 증가
     await Post.increment({ viewCount: 1 }, { where: { id: postId } });
