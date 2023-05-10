@@ -47,9 +47,9 @@ authController.login = async (req, res) => {
     }
 
     const userId = user.id;
-    const nickname = user.nickname;
     const userPassword = user.password;
-    const salt = user.passwordSalt;
+    const salt = user.salt;
+    const isSocial = user.isSocial;
 
     // 비밀번호 확인
     // 비밀번호 불일치
@@ -58,8 +58,8 @@ authController.login = async (req, res) => {
     }
 
     // accessToken & refreshToken 발급
-    const token = getJWT({ userId, nickname, email });
-    const refresh = getRefresh({ userId, nickname, email });
+    const token = getJWT({ userId, email, isSocial });
+    const refresh = getRefresh({ userId, email, isSocial });
 
     // Redis 내 토큰 정보 저장
     // A. accessToken (1 h)
@@ -173,8 +173,9 @@ authController.loginKakao = async (req, res) => {
 
       // accessToken & refreshToken 발급
       const email = user["email"];
-      const token = getJWT({ userId, nickname, email });
-      const refresh = getRefresh({ userId, nickname, email });
+      const isSocial = user["isSocial"];
+      const token = getJWT({ userId, email, isSocial });
+      const refresh = getRefresh({ userId, email, isSocial });
 
       // Redis 내 토큰 정보 저장
       // A. accessToken (1 h)
@@ -294,8 +295,9 @@ authController.setNickname = async (req, res) => {
 
     // accessToken & refreshToken 발급
     const email = user["email"];
-    const token = getJWT({ userId, nickname, email });
-    const refresh = getRefresh({ userId, nickname, email });
+    const isSocial = user["isSocial"];
+    const token = getJWT({ userId, email, isSocial });
+    const refresh = getRefresh({ userId, email, isSocial });
 
     // Redis 내 토큰 정보 저장
     // A. accessToken (1 h)
@@ -518,7 +520,7 @@ authController.joinEmail = async (req, res) => {
         nickname: nickname,
         joinDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
         password: hashedPassword,
-        passwordSalt: salt,
+        salt: salt,
       },
       {
         where: {
@@ -562,9 +564,9 @@ authController.refresh = async (req, res) => {
   try {
     // 새로운 access token / refresh token 발급
     const userId = req.userId;
-    const nickname = req.nickname;
     const email = req.email;
-    const payload = { userId, nickname, email };
+    const isSocial = req.isSocial;
+    const payload = { userId, email, isSocial };
 
     const newAccess = getJWT(payload);
     const newRefresh = getRefresh(payload);
