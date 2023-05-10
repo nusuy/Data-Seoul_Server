@@ -214,7 +214,7 @@ authController.loginKakao = async (req, res) => {
         isAuthorized: true,
         salt: kakaoUserId,
         deviceToken: hashedToken,
-        iv: iv,
+        iv: ivString,
       }).then((res) => {
         return res;
       });

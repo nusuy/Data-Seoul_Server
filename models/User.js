@@ -57,7 +57,6 @@ const User = (sequelize, DataTypes) => {
   User.associate = (models) => {
     models.User.hasMany(models.Post, {
       foreignKey: "userId",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
     models.User.hasMany(models.Wishlist, {
@@ -67,12 +66,10 @@ const User = (sequelize, DataTypes) => {
     });
     models.User.hasMany(models.Comment, {
       foreignKey: "userId",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
     models.User.hasMany(models.ReplyToComment, {
       foreignKey: "userId",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
     models.User.hasMany(models.Notification, {
