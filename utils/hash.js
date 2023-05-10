@@ -48,13 +48,15 @@ export const createHashedDeviceToken = (token) => {
   const cipher = createCipheriv("aes-256-cbc", CIPHER_KEY, iv);
   let hashedToken = cipher.update(token, "utf8", "base64");
   hashedToken += cipher.final("base64");
+  const ivString = iv.toString("base64");
 
-  return { hashedToken, iv };
+  return { hashedToken, ivString };
 };
 
 // deviceToken 복호화
 export const decodeHashedDeviceToken = (hashedToken, iv) => {
-  const decipher = createDecipheriv("aes-256-cbc", CIPHER_KEY, iv);
+  const encodedIv = Buffer.from(iv, "base64");
+  const decipher = createDecipheriv("aes-256-cbc", CIPHER_KEY, encodedIv);
   let decodedToken = decipher.update(hashedToken, "base64", "utf8");
   decodedToken += decipher.final("utf8");
 

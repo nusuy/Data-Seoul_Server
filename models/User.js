@@ -33,7 +33,7 @@ const User = (sequelize, DataTypes) => {
       salt: {
         type: DataTypes.STRING(100),
         allowNull: true,
-        comment: "email login only",
+        comment: "email login: salt for pwd / social login: social userId",
       },
       deviceToken: {
         type: DataTypes.STRING(300),
