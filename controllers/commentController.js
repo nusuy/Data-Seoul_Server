@@ -42,6 +42,8 @@ commentController.readComment = async (req, res) => {
         message: "No Comment.",
         data: null,
       });
+
+      return;
     }
 
     // 데이터 저장
