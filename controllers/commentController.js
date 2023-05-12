@@ -79,7 +79,7 @@ commentController.readComment = async (req, res) => {
           data.userId = item["userId"];
           data.publishDate = item["publishDate"];
           data.content = item["content"];
-          replyArr.push(reply);
+          replyArr.push(data);
         });
 
         item.reply = replyArr;
