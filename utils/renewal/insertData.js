@@ -10,6 +10,8 @@ const insertData = (now, data, type) => {
   const latData = type === "dept" ? data["MAP_LAT"] : data["MAP_LATITUDE"];
   const lngData = type === "dept" ? data["MAP_LNG"] : data["MAP_LONGITUDE"];
   const { lat, lng } = checkLatLng(latData, lngData);
+  const insert = parseDate(data["INSERT_DT"], true);
+  const insertDate = insert ? insert : now;
 
   switch (type) {
     case "off":
@@ -26,7 +28,7 @@ const insertData = (now, data, type) => {
       result.deptLat = lat;
       result.deptLng = lng;
       result.capacity = data["CAPACITY"] === "" ? 0 : Number(data["CAPACITY"]);
-      result.insertDate = now;
+      result.insertDate = insertDate;
       break;
     case "on":
       const { applyStart, applyEnd } = parseOnlineApplyDate(
@@ -45,7 +47,7 @@ const insertData = (now, data, type) => {
       result.deptLng = lng;
       result.isFree = data["FEE"] === "무료" ? true : false;
       result.isAvailable = data["STATUS"] === "ING" ? true : false;
-      result.insertDate = now;
+      result.insertDate = insertDate;
       break;
     case "dept":
       result.name = checkNull(data["DEPT_NM"]);

@@ -58,7 +58,7 @@ const Course = (sequelize, DataTypes) => {
         allowNull: true,
       },
       insertDate: {
-        type: DataTypes.DATE,
+        type: DataTypes.STRING(100),
         allowNull: false,
       },
       likeCount: {
