@@ -178,8 +178,8 @@ commentController.addReplyComment = async (req, res) => {
     const commentId = req.params.commentId;
     const content = req.body.content;
 
-    // PostId 유효성 검사
-    const reply = await Comment.findOne({
+    // commentId 유효성 검사
+    const comment = await Comment.findOne({
       where: {
         id: commentId,
       },
@@ -188,7 +188,7 @@ commentController.addReplyComment = async (req, res) => {
     });
 
     // 해당 원댓글 존재하지 않을 경우
-    if (!reply) {
+    if (!comment) {
       throw new Error("Invalid CommentId.");
     }
 
@@ -200,7 +200,7 @@ commentController.addReplyComment = async (req, res) => {
     }
 
     // 데이터 저장
-    const replyId = await Comment.create({
+    const replyId = await ReplyToComment.create({
       userId: userId,
       commentId: commentId,
       content: content,

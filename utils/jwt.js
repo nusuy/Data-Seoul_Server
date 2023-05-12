@@ -4,13 +4,13 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const getJWT = (payload) => {
-  const { userId, nickname, email } = payload;
+  const { userId, email, isSocial } = payload;
 
   const token = jwt.sign(
     {
       userId: userId,
-      nickname: nickname,
       email: email,
+      isSocial: isSocial,
     },
     process.env.JWT_SECRET,
     { expiresIn: 60 * 60 } // 1 시간 후 만료
@@ -20,14 +20,14 @@ export const getJWT = (payload) => {
 };
 
 export const getRefresh = (payload) => {
-  const { userId, nickname, email } = payload;
+  const { userId, email, isSocial } = payload;
   const str = "refresh_token";
 
   const token = jwt.sign(
     {
       userId: userId,
-      nickname: nickname,
       email: email,
+      isSocial: isSocial,
       string: str,
     },
     process.env.JWT_SECRET,

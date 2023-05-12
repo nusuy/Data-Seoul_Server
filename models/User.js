@@ -33,7 +33,7 @@ const User = (sequelize, DataTypes) => {
       salt: {
         type: DataTypes.STRING(100),
         allowNull: true,
-        comment: "email login only",
+        comment: "email login: salt for pwd / social login: social userId",
       },
     },
     {
@@ -47,7 +47,6 @@ const User = (sequelize, DataTypes) => {
   User.associate = (models) => {
     models.User.hasMany(models.Post, {
       foreignKey: "userId",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
     models.User.hasMany(models.Wishlist, {
@@ -57,12 +56,10 @@ const User = (sequelize, DataTypes) => {
     });
     models.User.hasMany(models.Comment, {
       foreignKey: "userId",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
     models.User.hasMany(models.ReplyToComment, {
       foreignKey: "userId",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
     models.User.hasMany(models.Notification, {

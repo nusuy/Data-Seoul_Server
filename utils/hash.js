@@ -6,6 +6,7 @@ dotenv.config();
 
 const randomBytesPromise = util.promisify(randomBytes);
 const pdkdf2Promise = util.promisify(pbkdf2);
+const CIPHER_KEY = process.env.CIPHER_KEY;
 
 const createSalt = async () => {
   const buf = await randomBytesPromise(64);

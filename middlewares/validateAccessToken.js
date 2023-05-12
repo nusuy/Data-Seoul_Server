@@ -37,7 +37,7 @@ function validateAccessToken(req, res, next) {
       // Redis 내 user 정보 조회
       const userId = await redisCli.get(token);
 
-      if (Number(userId) === user.userId) {
+      if (Number(userId) === Number(user.userId)) {
         // Redis 내 토큰 존재
         req.user = Number(userId);
         req.token = token;

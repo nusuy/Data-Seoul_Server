@@ -24,13 +24,12 @@ const ReplyToComment = (sequelize, DataTypes) => {
     models.ReplyToComment.belongsTo(models.User, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "cascade",
+      onDelete: "set null",
       onUpdate: "cascade",
     });
     models.ReplyToComment.belongsTo(models.Comment, {
       foreignKey: "commentId",
       sourceKey: "id",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
   };
