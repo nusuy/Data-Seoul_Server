@@ -1,37 +1,9 @@
 import models from "../models/index.js";
+import findNickname from "../utils/findNickname.js";
+import commentCount from "../utils/commentCount.js";
 
 const Post = models.Post;
-const Comment = models.Comment;
-const User = models.User;
-
 const postController = {};
-
-const findNickname = async (userId) => {
-  const nickname = await User.findOne({
-    attributes: ["nickname"],
-    where: {
-      id: userId,
-    },
-  }).then((res) => {
-    return res;
-  });
-
-  const result = nickname ? nickname["dataValues"]["nickname"] : null;
-
-  return result;
-};
-
-const commentCount = async (postId) => {
-  const comments = await Comment.findAll({
-    where: {
-      postId: postId,
-    },
-  }).then((res) => {
-    return res;
-  });
-
-  return comments.length;
-};
 
 // 게시글 목록 조회
 postController.readList = async (req, res) => {
