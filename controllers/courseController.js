@@ -219,6 +219,7 @@ courseController.readDetail = async (req, res) => {
         "applyEndDate",
         "startDate",
         "endDate",
+        "insertDate",
         "deptName",
         [sequelize.literal("Dept.tel"), "deptTel"],
         "deptGu",
@@ -247,7 +248,7 @@ courseController.readDetail = async (req, res) => {
 
     res.status(200).send({
       status: 200,
-      data: result,
+      data: data,
     });
   } catch (err) {
     console.error(err);
