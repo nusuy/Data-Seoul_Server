@@ -73,8 +73,8 @@ async function validateRefreshToken(req, res, next) {
 
       // payload 저장
       req.userId = userId;
-      req.nickname = payload["nickname"];
       req.email = payload["email"];
+      req.isSocial = payload["isSocial"];
 
       next();
     }
