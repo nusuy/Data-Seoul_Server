@@ -223,6 +223,7 @@ courseController.readDetail = async (req, res) => {
         [sequelize.literal("Dept.tel"), "deptTel"],
         "deptGu",
         [sequelize.literal("Dept.addr"), "deptAddr"],
+        [sequelize.literal("Dept.url"), "deptUrl"],
         "deptLat",
         "deptLng",
         "likeCount",
