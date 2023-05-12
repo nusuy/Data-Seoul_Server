@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import util from "util";
-import { pbkdf2, randomBytes, createCipheriv, createDecipheriv } from "crypto";
+import { pbkdf2, randomBytes } from "crypto";
 
 dotenv.config();
 
@@ -41,26 +41,3 @@ export const verifyPassword = async (password, userSalt, userPassword) => {
 
   return hashedPassword === userPassword;
 };
-
-// deviceToken 암호화
-export const createHashedDeviceToken = (token) => {
-  const iv = randomBytes(16);
-  const cipher = createCipheriv("aes-256-cbc", CIPHER_KEY, iv);
-  let hashedToken = cipher.update(token, "utf8", "base64");
-  hashedToken += cipher.final("base64");
-  const ivString = iv.toString("base64");
-
-  return { hashedToken, ivString };
-};
-
-// deviceToken 복호화
-export const decodeHashedDeviceToken = (hashedToken, iv) => {
-  const encodedIv = Buffer.from(iv, "base64");
-  const decipher = createDecipheriv("aes-256-cbc", CIPHER_KEY, encodedIv);
-  let decodedToken = decipher.update(hashedToken, "base64", "utf8");
-  decodedToken += decipher.final("utf8");
-
-  return decodedToken;
-};
-
-export const decodeDeviceToken = async (userSalt, userToken) => {};

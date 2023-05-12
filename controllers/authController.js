@@ -1,11 +1,7 @@
 import axios from "axios";
 import dotenv from "dotenv";
 import models from "../models/index.js";
-import {
-  createHashedPassword,
-  verifyPassword,
-  createHashedDeviceToken,
-} from "../utils/hash.js";
+import { createHashedPassword, verifyPassword } from "../utils/hash.js";
 import { getJWT, getRefresh } from "../utils/jwt.js";
 import redisCli from "../utils/redisCli.js";
 import sendEmailCode from "../utils/sendEmailCode.js";
@@ -28,7 +24,6 @@ authController.login = async (req, res) => {
   try {
     const email = req.body.email;
     const password = req.body.password;
-    const deviceToken = req.body.deviceToken;
 
     // 회원 조회
     const user = await User.findOne({
@@ -40,10 +35,6 @@ authController.login = async (req, res) => {
     // 미가입 회원
     if (!user) {
       throw new Error("Not a member.");
-    }
-
-    if (!deviceToken) {
-      throw new Error("Device Token Required.");
     }
 
     const userId = user.id;
@@ -97,9 +88,6 @@ authController.login = async (req, res) => {
     if (err.message === "Not a member.") {
       message = err.message;
       errCode = 401;
-    } else if (err.message === "Device Token Required.") {
-      message = err.message;
-      errCode = 400;
     } else if (err.message === "Incorrect Password.") {
       message = err.message;
       errCode = 403;
@@ -118,7 +106,6 @@ authController.loginKakao = async (req, res) => {
   let errCode = 500;
   try {
     const code = req.query.code;
-    const deviceToken = req.body.deviceToken;
 
     // 인가코드 전송
     const result = await axios.post(
@@ -144,11 +131,6 @@ authController.loginKakao = async (req, res) => {
       throw new Error("Email Consent Needed.");
     }
 
-    if (!deviceToken) {
-      throw new Error("Device Token Required.");
-    }
-
-    const { hashedToken, ivString } = createHashedDeviceToken(deviceToken);
     const email = profile.data.kakao_account.email;
     const kakaoUserId = profile.data.id;
 
@@ -159,14 +141,11 @@ authController.loginKakao = async (req, res) => {
 
     if (user) {
       const userId = user["id"];
-      const nickname = user["nickname"];
 
-      // device token 저장
+      // kakao user id 저장
       await User.update(
         {
           salt: kakaoUserId,
-          deviceToken: hashedToken,
-          iv: ivString,
         },
         { where: { id: userId } }
       );
@@ -214,8 +193,6 @@ authController.loginKakao = async (req, res) => {
         isSocial: true,
         isAuthorized: true,
         salt: kakaoUserId,
-        deviceToken: hashedToken,
-        iv: ivString,
       }).then((res) => {
         return res;
       });
@@ -236,9 +213,6 @@ authController.loginKakao = async (req, res) => {
     if (err.message === "Email Consent Needed.") {
       message = err.message;
       errCode = 403;
-    } else if (err.message === "Device Token Required.") {
-      message = err.message;
-      errCode = 400;
     } else if (err.message === "Request failed with status code 400") {
       message = "Invalid Authorization Code";
       errCode = 403;

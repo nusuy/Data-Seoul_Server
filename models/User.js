@@ -35,16 +35,6 @@ const User = (sequelize, DataTypes) => {
         allowNull: true,
         comment: "email login: salt for pwd / social login: social userId",
       },
-      deviceToken: {
-        type: DataTypes.STRING(300),
-        allowNull: true,
-        comment: "for push notify",
-      },
-      iv: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-        comment: "for push notify",
-      },
     },
     {
       charset: "utf8",
