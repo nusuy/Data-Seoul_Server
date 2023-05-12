@@ -9,6 +9,7 @@ const development = {
   database: "database_seoul01",
   host: process.env.DB_HOST,
   dialect: "mysql",
+  dialectOptions: { decimalNumbers: true },
   timezone: "+09:00",
   logging: false,
 };

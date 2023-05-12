@@ -3,6 +3,8 @@ import models from "../models/index.js";
 
 const Course = models.Course;
 const Wishlist = models.Wishlist;
+const Dept = models.Dept;
+const sequelize = models.sequelize;
 const courseController = {};
 
 // 강좌 목록 조회
@@ -207,6 +209,33 @@ courseController.readDetail = async (req, res) => {
       where: {
         id: courseId,
       },
+      attributes: [
+        ["id", "courseId"],
+        "type",
+        "title",
+        "category",
+        "url",
+        "applyStartDate",
+        "applyEndDate",
+        "startDate",
+        "endDate",
+        "deptName",
+        [sequelize.literal("Dept.tel"), "deptTel"],
+        "deptGu",
+        [sequelize.literal("Dept.addr"), "deptAddr"],
+        "deptLat",
+        "deptLng",
+        "likeCount",
+        "isAvailable",
+        "isFree",
+        "capacity",
+      ],
+      include: [
+        {
+          model: Dept,
+          attributes: [],
+        },
+      ],
     }).then((res) => {
       return res;
     });
@@ -215,31 +244,9 @@ courseController.readDetail = async (req, res) => {
       throw new Error("Invalid CourseId.");
     }
 
-    const result = {};
-    result.courseId = data["id"];
-    result.courseCode = data["courseCode"];
-    result.type = data["type"];
-    result.title = data["title"];
-    result.category = data["category"];
-    result.url = data["url"];
-    result.applyStartDate = data["applyStartDate"];
-    result.applyEndDate = data["applyEndDate"];
-    result.startDate = data["startDate"];
-    result.endDate = data["endDate"];
-    result.deptId = data["deptId"];
-    result.deptName = data["deptName"];
-    result.deptGu = data["deptGu"];
-    result.deptLat = data["deptLat"] ? Number(data["deptLat"]) : null;
-    result.deptLng = data["deptLng"] ? Number(data["deptLng"]) : null;
-    result.insertDate = data["insertDate"];
-    result.likeCount = data["likeCount"];
-    result.isAvailable = data["isAvailable"];
-    result.isFree = data["isFree"];
-    result.capacity = data["capacity"];
-
     res.status(200).send({
       status: 200,
-      data: result,
+      data: data,
     });
   } catch (err) {
     console.error(err);
