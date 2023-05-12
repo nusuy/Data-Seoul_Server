@@ -219,6 +219,7 @@ courseController.readDetail = async (req, res) => {
         "applyEndDate",
         "startDate",
         "endDate",
+        "insertDate",
         "deptName",
         [sequelize.literal("Dept.tel"), "deptTel"],
         "deptGu",
