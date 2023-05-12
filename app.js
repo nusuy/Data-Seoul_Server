@@ -5,8 +5,6 @@ import Auth from "./routes/Auth.js";
 import Course from "./routes/Course.js";
 import Post from "./routes/Post.js";
 import Comment from "./routes/Comment.js";
-import Mypage from "./routes/Mypage.js";
-import Notification from "./routes/Notification.js";
 
 // env
 dotenv.config();
@@ -31,8 +29,6 @@ app.use("/auth", Auth);
 app.use("/course", Course);
 app.use("/post", Post);
 app.use("/comment", Comment);
-app.use("/mypage", Mypage);
-app.use("/notif", Notification);
 
 app.listen(PORT, () => {
   console.log(`Server listening on PORT ${PORT}`);
