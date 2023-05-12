@@ -1,37 +1,9 @@
 import models from "../models/index.js";
+import findNickname from "../utils/findNickname.js";
+import commentCount from "../utils/commentCount.js";
 
 const Post = models.Post;
-const Comment = models.Comment;
-const User = models.User;
-
 const postController = {};
-
-const findNickname = async (userId) => {
-  const nickname = await User.findOne({
-    attributes: ["nickname"],
-    where: {
-      id: userId,
-    },
-  }).then((res) => {
-    return res;
-  });
-
-  const result = nickname ? nickname["dataValues"]["nickname"] : null;
-
-  return result;
-};
-
-const commentCount = async (postId) => {
-  const comments = await Comment.findAll({
-    where: {
-      postId: postId,
-    },
-  }).then((res) => {
-    return res;
-  });
-
-  return comments.length;
-};
 
 // 게시글 목록 조회
 postController.readList = async (req, res) => {
@@ -146,6 +118,7 @@ postController.readDetail = async (req, res) => {
 
     result.publishDate = post["publishDate"];
     result.viewCount = post["viewCount"] + 1;
+    result.commentCount = await commentCount(post["id"]);
 
     // 조회 수 증가
     await Post.increment({ viewCount: 1 }, { where: { id: postId } });

@@ -38,12 +38,11 @@ const Post = (sequelize, DataTypes) => {
     models.Post.belongsTo(models.User, {
       foreignKey: "userId",
       sourceKey: "id",
-      onDelete: "cascade",
+      onDelete: "set null",
       onUpdate: "cascade",
     });
     models.Post.hasMany(models.Comment, {
       foreignKey: "postId",
-      onDelete: "cascade",
       onUpdate: "cascade",
     });
   };
