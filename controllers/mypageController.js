@@ -1,7 +1,11 @@
 import models from "../models/index.js";
-import { createHashedPassword } from "../utils/hash.js";
+import { createHashedPassword, verifyPassword } from "../utils/hash.js";
 import commentCount from "../utils/commentCount.js";
 import findNickname from "../utils/findNickname.js";
+import {
+  nicknameValidation,
+  passwordValidation,
+} from "../utils/strValidation.js";
 
 const sequelize = models.sequelize;
 const User = models.User;
@@ -17,7 +21,6 @@ mypageController.readLike = async (req, res) => {
   try {
     const userId = req.user;
     const type = req.params.type;
-    const courseList = [];
 
     // type 값이 올바르지 않은 경우
     if (type !== "off" && type !== "on") {
@@ -28,7 +31,6 @@ mypageController.readLike = async (req, res) => {
     const list = await Wishlist.findAll({
       where: { userId: userId, "$Course.type$": type },
       attributes: [
-        "userId",
         "wishDate",
         [sequelize.literal("Course.id"), "courseId"],
         [sequelize.literal("Course.type"), "type"],
@@ -97,8 +99,6 @@ mypageController.readPost = async (req, res) => {
     }).then((res) => {
       return res;
     });
-
-    console.log(list);
 
     for (const item of list) {
       item["dataValues"].commentCount = await commentCount(item["id"]);
@@ -197,9 +197,13 @@ mypageController.setPassword = async (req, res) => {
       return res;
     });
 
+    if (user["isSocial"]) {
+      throw new Error("Social login user.");
+    }
+
     // 현재 비밀번호 일치 여부 검사
     const userPassword = user.password;
-    const userSalt = user.passwordSalt;
+    const userSalt = user.salt;
 
     // 비밀번호 불일치
     if (!(await verifyPassword(password, userSalt, userPassword))) {
@@ -235,7 +239,10 @@ mypageController.setPassword = async (req, res) => {
   } catch (err) {
     console.error(err);
 
-    if (err.message === "Incorrect Password.") {
+    if (
+      err.message === "Social login user." ||
+      err.message === "Incorrect Password."
+    ) {
       message = err.message;
       errCode = 403;
     } else if (err.message === "Invalid Password.") {
