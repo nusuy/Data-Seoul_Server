@@ -37,24 +37,16 @@ postController.readList = async (req, res) => {
 
     const result = [];
     for (const post of list) {
-      const nickname = await findNickname(post["userId"]);
-      const comments = await commentCount(post["id"]);
       const postData = {};
 
       postData.postId = post["id"];
       postData.title = post["title"];
       postData.content = post["content"];
       postData.userId = post["userId"];
-
-      if (!nickname) {
-        postData.userNickname = "Member not found.";
-      } else {
-        postData.userNickname = nickname;
-      }
-
+      postData.userNickname = await findNickname(post["userId"]);
       postData.publishDate = post["publishDate"];
       postData.viewCount = post["viewCount"];
-      postData.commentCount = comments;
+      postData.commentCount = await commentCount(post["id"]);
 
       result.push(postData);
     }
@@ -103,19 +95,12 @@ postController.readDetail = async (req, res) => {
     }
 
     const result = {};
-    const nickname = await findNickname(post["userId"]);
 
     result.postId = post["id"];
     result.title = post["title"];
     result.content = post["content"];
     result.userId = post["userId"];
-
-    if (!nickname) {
-      result.userNickname = "Member not found.";
-    } else {
-      result.userNickname = nickname;
-    }
-
+    result.userNickname = await findNickname(post["userId"]);
     result.publishDate = post["publishDate"];
     result.viewCount = post["viewCount"] + 1;
     result.commentCount = await commentCount(post["id"]);
