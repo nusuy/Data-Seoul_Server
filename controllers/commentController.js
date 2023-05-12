@@ -1,4 +1,5 @@
 import models from "../models/index.js";
+import findNickname from "../utils/findNickname.js";
 
 const Post = models.Post;
 const Comment = models.Comment;
@@ -48,15 +49,16 @@ commentController.readComment = async (req, res) => {
 
     // 데이터 저장
     const result = [];
-    commentData.map((item) => {
+
+    for (const item of commentData) {
       const data = {};
       data.commentId = item["id"];
       data.userId = item["userId"];
-      data.postId = item["postId"];
+      data.userNickname = await findNickname(item["userId"]);
       data.publishDate = item["publishDate"];
       data.content = item["content"];
       result.push(data);
-    });
+    }
 
     // 댓글에 대한 답글 조회
     for (const item of result) {
@@ -73,14 +75,15 @@ commentController.readComment = async (req, res) => {
       if (!replyData.length) {
         item.reply = null;
       } else {
-        replyData.map((reply) => {
+        for (const reply of replyData) {
           const data = {};
           data.replyId = reply["id"];
-          data.userId = item["userId"];
-          data.publishDate = item["publishDate"];
-          data.content = item["content"];
+          data.userId = reply["userId"];
+          data.userNickname = await findNickname(reply["userId"]);
+          data.publishDate = reply["publishDate"];
+          data.content = reply["content"];
           replyArr.push(data);
-        });
+        }
 
         item.reply = replyArr;
       }
