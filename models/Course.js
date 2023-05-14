@@ -66,6 +66,12 @@ const Course = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 0,
       },
+      imagePath: {
+        type: DataTypes.STRING(2500),
+        allowNull: true,
+        defaultValue: null,
+        comment: "online only",
+      },
       isAvailable: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

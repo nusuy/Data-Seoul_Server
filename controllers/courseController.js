@@ -228,6 +228,14 @@ courseController.readDetail = async (req, res) => {
         "deptLat",
         "deptLng",
         "likeCount",
+        [
+          sequelize.fn(
+            "concat",
+            process.env.SLL_URL,
+            sequelize.col("imagePath")
+          ),
+          "imagePath",
+        ],
         "isAvailable",
         "isFree",
         "capacity",
@@ -244,6 +252,10 @@ courseController.readDetail = async (req, res) => {
 
     if (!data) {
       throw new Error("Invalid CourseId.");
+    }
+
+    if (data["dataValues"]["imagePath"] === process.env.SLL_URL) {
+      data["dataValues"]["imagePath"] = null;
     }
 
     const wish = await Wishlist.findOne({
