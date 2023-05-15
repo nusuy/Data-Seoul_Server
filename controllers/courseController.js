@@ -7,11 +7,35 @@ const Dept = models.Dept;
 const sequelize = models.sequelize;
 const courseController = {};
 
+const setFilter = (filter, item) => {
+  if (!filter) {
+    return;
+  }
+
+  const now = new Date();
+  now.setHours(9);
+  now.setMinutes(0);
+  now.setSeconds(0);
+
+  switch (filter) {
+    case "upcoming":
+      return new Date(item["applyStartDate"]) > now;
+    case "ongoing":
+      return (
+        new Date(item["applyStartDate"]) <= now &&
+        new Date(item["applyEndDate"]) >= now
+      );
+    case "done":
+      return new Date(item["applyEndDate"]) < now;
+  }
+};
+
 // 강좌 목록 조회
 courseController.readList = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
+    const userId = req.user;
     const type = req.params.type; // all / off / on
     const order = req.query.order; // insert / like / end
     const filter = req.query.filter;
@@ -23,7 +47,6 @@ courseController.readList = async (req, res) => {
     let isValidOrder = false;
     let isValidFilter = false;
     let data = null;
-    const courseList = [];
     const filteredCourseList = [];
 
     // 데이터 갱신
@@ -114,9 +137,6 @@ courseController.readList = async (req, res) => {
     if (!data) {
       throw new Error("Database connection error.");
     }
-    data.map((item) => {
-      courseList.push(item["dataValues"]);
-    });
 
     // filter
     if (filter) {
@@ -130,37 +150,16 @@ courseController.readList = async (req, res) => {
       if (!isValidFilter) {
         throw new Error("Invalid filter.");
       }
+    }
 
-      const now = new Date();
-      now.setHours(9);
-      now.setMinutes(0);
-      now.setSeconds(0);
+    for (const item of data) {
+      if (!filter || (filter && setFilter(filter, item))) {
+        const wish = await Wishlist.findOne({
+          where: { userId: userId, courseId: item.id },
+        });
+        item["dataValues"].isLiked = wish ? true : false;
 
-      switch (filter) {
-        case "upcoming":
-          courseList.map((item) => {
-            if (new Date(item["applyStartDate"]) > now) {
-              filteredCourseList.push(item);
-            }
-          });
-          break;
-        case "ongoing":
-          courseList.map((item) => {
-            if (
-              new Date(item["applyStartDate"]) <= now &&
-              new Date(item["applyEndDate"]) >= now
-            ) {
-              filteredCourseList.push(item);
-            }
-          });
-          break;
-        case "done":
-          courseList.map((item) => {
-            if (new Date(item["applyEndDate"]) < now) {
-              filteredCourseList.push(item);
-            }
-          });
-          break;
+        filteredCourseList.push(item);
       }
     }
 
@@ -168,7 +167,7 @@ courseController.readList = async (req, res) => {
     res.status(200).send({
       status: 200,
       message: `[Update Result] Offline: ${updateResult.off} - ${newLength.off}, Online: ${updateResult.on} - ${newLength.on}, Dept: ${updateResult.dept} - ${newLength.dept}`,
-      data: filter ? filteredCourseList : courseList,
+      data: filteredCourseList,
     });
   } catch (err) {
     console.error(err);
@@ -198,6 +197,7 @@ courseController.readDetail = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
+    const userId = req.user;
     const courseId = req.params.courseId;
 
     if (!courseId) {
@@ -228,6 +228,14 @@ courseController.readDetail = async (req, res) => {
         "deptLat",
         "deptLng",
         "likeCount",
+        [
+          sequelize.fn(
+            "concat",
+            process.env.SLL_URL,
+            sequelize.col("imagePath")
+          ),
+          "imagePath",
+        ],
         "isAvailable",
         "isFree",
         "capacity",
@@ -245,6 +253,15 @@ courseController.readDetail = async (req, res) => {
     if (!data) {
       throw new Error("Invalid CourseId.");
     }
+
+    if (data["dataValues"]["imagePath"] === process.env.SLL_URL) {
+      data["dataValues"]["imagePath"] = null;
+    }
+
+    const wish = await Wishlist.findOne({
+      where: { userId: userId, courseId: courseId },
+    });
+    data["dataValues"].isLiked = wish ? true : false;
 
     res.status(200).send({
       status: 200,
@@ -345,6 +362,7 @@ courseController.readNew = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
+    const userId = req.user;
     const type = req.params.type;
 
     if (type !== "off" && type !== "on") {
@@ -374,6 +392,13 @@ courseController.readNew = async (req, res) => {
     }).then((res) => {
       return res;
     });
+
+    for (const item of course) {
+      const wish = await Wishlist.findOne({
+        where: { userId: userId, courseId: item.id },
+      });
+      item["dataValues"].isLiked = wish ? true : false;
+    }
 
     // 응답 전송
     res.status(200).send({

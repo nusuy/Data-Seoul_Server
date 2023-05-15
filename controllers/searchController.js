@@ -137,8 +137,6 @@ searchController.findPost = async (req, res) => {
       return res;
     });
 
-    console.log(list);
-
     // 데이터 저장
     const result = [];
     for (const post of list) {

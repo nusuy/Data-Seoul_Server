@@ -45,6 +45,9 @@ const Post = (sequelize, DataTypes) => {
       foreignKey: "postId",
       onUpdate: "cascade",
     });
+    models.Post.hasMany(models.Notification, {
+      foreignKey: "postId",
+    });
   };
 
   return Post;
