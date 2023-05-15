@@ -234,12 +234,10 @@ authController.setNickname = async (req, res) => {
     const nickname = req.body.nickname;
 
     // 유저 조회
-    const user = await User.findOne(
-      {
-        attributes: ["id", "email", "nickname"],
-      },
-      { where: { id: userId } }
-    ).then((res) => {
+    const user = await User.findOne({
+      attributes: ["id", "email", "nickname"],
+      where: { id: userId },
+    }).then((res) => {
       return res;
     });
 
@@ -305,6 +303,17 @@ authController.setNickname = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+
+    if (
+      err.message === "Invalid userId." ||
+      err.message === "Invalid Nickname."
+    ) {
+      message = err.message;
+      errCode = 400;
+    } else if (err.message === "User already joined.") {
+      message = err.message;
+      errCode = 403;
+    }
 
     res.status(errCode).send({
       status: errCode,
