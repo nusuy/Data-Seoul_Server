@@ -6,6 +6,7 @@ import validateAccessTokenForSocket from "./validateAccessTokenForSocket.js";
 const User = models.User;
 const Post = models.Post;
 const Comment = models.Comment;
+const ReplyToComment = models.ReplyToComment;
 const Course = models.Course;
 const System = models.System;
 const Wishlist = models.Wishlist;
@@ -166,6 +167,18 @@ const socket = (io) => {
       const commentId = Number(data.commentId);
       const userId = Number(data.userId);
       let comment = null;
+      const targets = [];
+
+      // notification 전달 내용
+      const commentNotify = {
+        target: comment["writerId"],
+        postId: comment["postId"],
+      };
+      const replyNotify = {
+        target: comment["userId"],
+        postId: comment["postId"],
+        commentId: commentId,
+      };
 
       // commentId로 원댓글 조회
       if (commentId) {
@@ -183,63 +196,82 @@ const socket = (io) => {
       }
 
       if (comment && userId) {
-        // notification 데이터 저장 (게시글 작성자, 댓글 작성자)
-        await Notification.create({
-          category: "comment",
-          userId: comment["writerId"],
-          sourceId: comment["postId"],
-        });
-        await Notification.create({
-          category: "reply",
-          userId: comment["userId"],
-          sourceId: commentId,
-        });
-
-        // notification 전달 내용
-        const commentNotify = {
-          target: comment["writerId"],
-          postId: comment["postId"],
-        };
-        const replyNotify = {
-          target: comment["userId"],
-          postId: comment["postId"],
-          commentId: commentId,
-        };
+        // 게시글 작성자와 댓글 작성자 동일 여부
+        const isPostWriter = comment["userId"] === comment["writerId"];
 
         // 해당 댓글에 답글을 작성한 모든 유저 조회
-        const replyList = await Comment.findAll({
+        const replyList = await ReplyToComment.findAll({
           attributes: [
             [sequelize.fn("DISTINCT", sequelize.col("userId")), "userId"],
           ],
-          where: { userId: { ne: null } },
+          where: { userId: { [Op.ne]: null }, commentId: commentId },
         }).then((res) => {
           return res;
         });
+        replyList.map((user) => {
+          targets.push(Number(user["userId"]));
+        });
 
-        // 원댓글 작성자, 현재 답글 작성자 제외 알림 전송
-        for (const user of replyList) {
-          if (user !== comment["userId"] && user !== userId) {
-            // socket id 조회
-            const id = await redisCli.get(`${user}socket`);
+        // 알림 타겟 추가(원댓글 작성자, 게시글 작성자)
+        targets.push(Number(comment["writerId"]));
+        targets.push(Number(comment["userId"]));
 
-            // 알림 전송
-            io.to(id).emit("reply", replyNotify);
+        // 타겟 중복 제거
+        const uniqueTargets = [...new Set(targets)];
+        const replyTargets = [];
+        const commentTargets = [];
+
+        // 타겟 분류
+        for (const target of uniqueTargets) {
+          if (target === Number(comment["writerId"])) {
+            // 게시글 작성자일 경우
+            if (target === Number(comment["userId"])) {
+              // 댓글 작성자 && !해당 답글 작성자 (답글 알림)
+              replyTargets.push(target);
+            } else {
+              // !댓글 작성자 && !답글 작성자 (댓글 알림)
+              commentTargets.push(target);
+            }
+          } else {
+            if (target !== Number(comment["userId"])) {
+              // !해당 답글 작성자 (답글 알림)
+              replyTargets.push(target);
+            }
           }
         }
 
-        // 원댓글 작성자, 게시글 작성자 알림 전송
-        // socket id 조회
-        const postWriterId = await redisCli.get(`${comment["writerId"]}socket`);
-        const commentWriterId = await redisCli.get(
-          `${comment["userId"]}socket`
-        );
+        // 알림 전송 및 데이터 저장
+        // 1. 답글
+        for (const target of replyTargets) {
+          // 데이터 저장
+          await Notification.create({
+            category: "reply",
+            userId: target,
+            postId: comment["postId"],
+            commentId: commentId,
+          });
 
-        // 알림 전송
-        if (postWriterId) {
-          io.to(postWriterId).emit("comment", commentNotify);
+          // socket id 조회
+          const id = await redisCli.get(`${target}socket`);
+
+          // 알림 전송
+          io.to(id).emit("reply", replyNotify);
         }
-        if (commentWriterId) {
-          io.to(commentWriterId).emit("reply", replyNotify);
+        // 2. 댓글
+        for (const target of commentTargets) {
+          // 데이터 저장
+          await Notification.create({
+            category: "comment",
+            userId: target,
+            postId: comment["postId"],
+            commentId: commentId,
+          });
+
+          // socket id 조회
+          const id = await redisCli.get(`${target}socket`);
+
+          // 알림 전송
+          io.to(id).emit("comment", commentNotify);
         }
       } else {
         const message =
