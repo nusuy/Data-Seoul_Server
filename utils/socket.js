@@ -3,14 +3,15 @@ import redisCli from "./redisCli.js";
 import models from "../models/index.js";
 import validateAccessTokenForSocket from "./validateAccessTokenForSocket.js";
 
+const User = models.User;
 const Post = models.Post;
 const Comment = models.Comment;
 const Course = models.Course;
 const System = models.System;
 const Wishlist = models.Wishlist;
 const Notification = models.Notification;
-const Op = Sequelize.Op;
 const sequelize = models.sequelize;
+const Op = Sequelize.Op;
 
 const socket = (io) => {
   io.on("connection", (socket) => {
@@ -45,14 +46,27 @@ const socket = (io) => {
 
       // 최근 갱신 Log가 최근 날짜일 경우
       if (recentDate && recentDate.getDate() >= now - 1) {
+        // 모든 user 조회
+        const users = await User.findAll().then((res) => {
+          return res;
+        });
+
+        // notification 데이터 저장 (모든 user)
+        for (const user of users) {
+          await Notification.create({
+            category: "new",
+            userId: user["id"],
+          });
+        }
+
         // notification 전달 내용
         const notify = {
           target: "everyone",
           isNewAvailable: true,
         };
 
-        // 모든 client에게 알림 전송
-        io.sockets.emit("regular", notify);
+        // 알림 전송
+        io.to(socket.id).emit("regular", notify);
       }
 
       // 찜 수강신청 마지막 날
@@ -72,20 +86,30 @@ const socket = (io) => {
           return res;
         });
 
-        list.map((item) => {
+        for (const item of list) {
           const applyEndDate = new Date(
             item["dataValues"]["applyEndDate"]
           ).getDate();
 
           if (now <= applyEndDate && now >= applyEndDate - 3) {
+            // notification 데이터 저장
+            await Notification.create({
+              category: "last",
+              userId: userId,
+              sourceId: item["dataValues"]["courseId"],
+            });
+
+            // notification 전달 내용
             const notify = {
               target: userId,
               courseId: item["dataValues"]["courseId"],
               remaining: applyEndDate - now,
             };
+
+            // 알림 전송
             io.to(socket.id).emit("regular", notify);
           }
-        });
+        }
       }
     });
 
