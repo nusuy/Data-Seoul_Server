@@ -38,6 +38,9 @@ const Comment = (sequelize, DataTypes) => {
       onDelete: "cascade",
       onUpdate: "cascade",
     });
+    models.Course.hasMany(models.Notification, {
+      foreignKey: "commentId",
+    });
   };
 
   return Comment;

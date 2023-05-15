@@ -108,6 +108,9 @@ const Course = (sequelize, DataTypes) => {
     models.Course.hasMany(models.Wishlist, {
       foreignKey: "courseId",
     });
+    models.Course.hasMany(models.Notification, {
+      foreignKey: "courseId",
+    });
   };
 
   return Course;

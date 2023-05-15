@@ -25,10 +25,23 @@ const Notification = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
-      sourceId: {
+      courseId: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        comment: "courseId / commentId / replyId",
+        defaultValue: null,
+        comment: "last only",
+      },
+      postId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        comment: "comment / reply only",
+      },
+      commentId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        comment: "comment / reply only",
       },
     },
     {
@@ -44,6 +57,24 @@ const Notification = (sequelize, DataTypes) => {
       foreignKey: "userId",
       sourceKey: "id",
       onDelete: "cascade",
+      onUpdate: "cascade",
+    });
+    models.Notification.belongsTo(models.Course, {
+      foreignKey: "courseId",
+      sourceKey: "id",
+      onDelete: "set null",
+      onUpdate: "cascade",
+    });
+    models.Notification.belongsTo(models.Post, {
+      foreignKey: "postId",
+      sourceKey: "id",
+      onDelete: "set null",
+      onUpdate: "cascade",
+    });
+    models.Notification.belongsTo(models.Comment, {
+      foreignKey: "commentId",
+      sourceKey: "id",
+      onDelete: "set null",
       onUpdate: "cascade",
     });
   };
