@@ -28,14 +28,8 @@ const socket = (io) => {
       });
     });
 
-    // 정기 알림 (새로운 강좌, 찜 수강신청 마지막 날)
-    socket.on("regular", async (data) => {
-      const token = data;
-      const { status, message, userId } = await validateAccessTokenForSocket(
-        token
-      );
-
-      // 새로운 강좌
+    // 새로운 강좌
+    socket.on("new", async (data) => {
       const recentDate = await System.findOne({
         where: { [Op.or]: [{ category: "off" }, { category: "on" }] },
         order: [["logDate", "DESC"]],
@@ -67,10 +61,20 @@ const socket = (io) => {
         };
 
         // 알림 전송
-        io.to(socket.id).emit("regular", notify);
+        io.to(socket.id).emit("new", notify);
       }
+    });
 
-      // 찜 수강신청 마지막 날
+    // 관심 강좌 수강신청 마지막 날 임박
+    socket.on("last", async (data) => {
+      const now = new Date().getDate();
+
+      // 토큰 유효성 검사
+      const token = data;
+      const { status, message, userId } = await validateAccessTokenForSocket(
+        token
+      );
+
       if (!status) {
         // token validation 실패한 경우
         io.to(socket.id).emit("regular", `[ Failed ] ${message}`);
@@ -108,7 +112,7 @@ const socket = (io) => {
             };
 
             // 알림 전송
-            io.to(socket.id).emit("regular", notify);
+            io.to(socket.id).emit("last", notify);
           }
         }
       }
@@ -116,8 +120,9 @@ const socket = (io) => {
 
     // 댓글 작성
     socket.on("comment", async (data) => {
-      // 댓글이 작성된 postId
-      const postId = Number(data);
+      // 댓글이 작성된 postId, 댓글 작성자 userId
+      const postId = Number(data.postId);
+      const userId = Number(data.userId);
       let writer = null;
 
       if (postId) {
@@ -132,25 +137,28 @@ const socket = (io) => {
       }
 
       if (writer) {
-        // notification 데이터 저장
-        await Notification.create({
-          category: "comment",
-          userId: writer,
-          sourceId: postId,
-        });
+        // 해당 게시글 작성자가 댓글 작성자가 아닐 경우에만 알림 전송
+        if (writer !== userId) {
+          // notification 데이터 저장
+          await Notification.create({
+            category: "comment",
+            userId: writer,
+            sourceId: postId,
+          });
 
-        // notification 전달 내용
-        const notify = {
-          target: writer,
-          postId: postId,
-        };
+          // notification 전달 내용
+          const notify = {
+            target: writer,
+            postId: postId,
+          };
 
-        // 게시글 작성자 socket id 조회
-        const writerId = await redisCli.get(`${writer}socket`);
+          // 게시글 작성자 socket id 조회
+          const writerId = await redisCli.get(`${writer}socket`);
 
-        // 알림 전송
-        if (writerId) {
-          io.to(writerId).emit("comment", notify);
+          // 알림 전송
+          if (writerId) {
+            io.to(writerId).emit("comment", notify);
+          }
         }
       } else {
         const message = !data
@@ -169,17 +177,6 @@ const socket = (io) => {
       let comment = null;
       const targets = [];
 
-      // notification 전달 내용
-      const commentNotify = {
-        target: comment["writerId"],
-        postId: comment["postId"],
-      };
-      const replyNotify = {
-        target: comment["userId"],
-        postId: comment["postId"],
-        commentId: commentId,
-      };
-
       // commentId로 원댓글 조회
       if (commentId) {
         comment = await Comment.findOne({
@@ -196,9 +193,6 @@ const socket = (io) => {
       }
 
       if (comment && userId) {
-        // 게시글 작성자와 댓글 작성자 동일 여부
-        const isPostWriter = comment["userId"] === comment["writerId"];
-
         // 해당 댓글에 답글을 작성한 모든 유저 조회
         const replyList = await ReplyToComment.findAll({
           attributes: [
@@ -233,12 +227,23 @@ const socket = (io) => {
               commentTargets.push(target);
             }
           } else {
-            if (target !== Number(comment["userId"])) {
+            if (target !== userId) {
               // !해당 답글 작성자 (답글 알림)
               replyTargets.push(target);
             }
           }
         }
+
+        // notification 전달 내용
+        const commentNotify = {
+          target: comment["writerId"],
+          postId: comment["postId"],
+        };
+        const replyNotify = {
+          target: comment["userId"],
+          postId: comment["postId"],
+          commentId: commentId,
+        };
 
         // 알림 전송 및 데이터 저장
         // 1. 답글
