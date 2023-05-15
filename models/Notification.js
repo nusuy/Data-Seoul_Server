@@ -16,10 +16,9 @@ const Notification = (sequelize, DataTypes) => {
         comment: "new / last / comment / reply",
       },
       isChecked: {
-        type: DataTypes.STRING(10),
+        type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: "unpub",
-        comment: "unpub / false / true",
+        defaultValue: false,
       },
       publishDate: {
         type: DataTypes.DATE,
