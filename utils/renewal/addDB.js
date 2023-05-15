@@ -19,8 +19,8 @@ const addDB = async (data, type) => {
         deptGu: data["deptGu"],
         deptLat: data["deptLat"],
         deptLng: data["deptLng"],
-        capacity: data["capacity"],
         insertDate: data["insertDate"],
+        capacity: data["capacity"],
       });
       break;
     case "on":
@@ -36,9 +36,10 @@ const addDB = async (data, type) => {
         deptGu: data["deptGu"],
         deptLat: data["deptLat"],
         deptLng: data["deptLng"],
-        isFree: data["isFree"],
-        isAvailable: data["isAvailable"],
         insertDate: data["insertDate"],
+        imagePath: data["imagePath"],
+        isAvailable: data["isAvailable"],
+        isFree: data["isFree"],
       });
       break;
     case "dept":

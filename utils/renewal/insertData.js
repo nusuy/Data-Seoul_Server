@@ -45,6 +45,7 @@ const insertData = (now, data, type) => {
       result.deptGu = checkNull(data["DEPT_GU"]);
       result.deptLat = lat;
       result.deptLng = lng;
+      result.imagePath = data["COURSE_IMAGE_FILE_PATH"];
       result.isFree = data["FEE"] === "무료" ? true : false;
       result.isAvailable = data["STATUS"] === "ING" ? true : false;
       result.insertDate = insertDate;
