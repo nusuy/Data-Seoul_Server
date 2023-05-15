@@ -13,6 +13,7 @@ const Notification = (sequelize, DataTypes) => {
       category: {
         type: DataTypes.STRING(50),
         allowNull: true,
+        comment: "new / last / comment / reply",
       },
       isChecked: {
         type: DataTypes.STRING(10),
@@ -23,6 +24,12 @@ const Notification = (sequelize, DataTypes) => {
       publishDate: {
         type: DataTypes.DATE,
         allowNull: true,
+        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+      },
+      sourceId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: "courseId / commentId / replyId",
       },
     },
     {
