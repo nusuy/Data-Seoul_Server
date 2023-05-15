@@ -162,8 +162,9 @@ const socket = (io) => {
 
     // 댓글-답글 작성
     socket.on("reply", async (data) => {
-      // 답글이 작성된 commentId
-      const commentId = Number(data);
+      // 답글이 작성된 commentId, 작성자 userId
+      const commentId = Number(data.commentId);
+      const userId = Number(data.userId);
       let comment = null;
 
       // commentId로 원댓글 조회
@@ -181,7 +182,7 @@ const socket = (io) => {
         });
       }
 
-      if (comment) {
+      if (comment && userId) {
         // notification 데이터 저장 (게시글 작성자, 댓글 작성자)
         await Notification.create({
           category: "comment",
@@ -205,6 +206,29 @@ const socket = (io) => {
           commentId: commentId,
         };
 
+        // 해당 댓글에 답글을 작성한 모든 유저 조회
+        const replyList = await Comment.findAll({
+          attributes: [
+            [sequelize.fn("DISTINCT", sequelize.col("userId")), "userId"],
+          ],
+          where: { userId: { ne: null } },
+        }).then((res) => {
+          return res;
+        });
+
+        // 원댓글 작성자, 현재 답글 작성자 제외 알림 전송
+        for (const user of replyList) {
+          if (user !== comment["userId"] && user !== userId) {
+            // socket id 조회
+            const id = await redisCli.get(`${user}socket`);
+
+            // 알림 전송
+            io.to(id).emit("reply", replyNotify);
+          }
+        }
+
+        // 원댓글 작성자, 게시글 작성자 알림 전송
+        // socket id 조회
         const postWriterId = await redisCli.get(`${comment["writerId"]}socket`);
         const commentWriterId = await redisCli.get(
           `${comment["userId"]}socket`
@@ -218,10 +242,12 @@ const socket = (io) => {
           io.to(commentWriterId).emit("reply", replyNotify);
         }
       } else {
-        const message = !data
-          ? "[ Transmission Failed ] Value Required."
-          : "[ Transmission Failed ] Invalid Value.";
+        const message =
+          !data.userId || !data.commentId
+            ? "[ Transmission Failed ] Value Required."
+            : "[ Transmission Failed ] Invalid Value.";
 
+        // 알림 전송
         io.to(socket.id).emit("reply", message);
       }
     });
