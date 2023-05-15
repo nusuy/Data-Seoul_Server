@@ -33,7 +33,7 @@ authController.login = async (req, res) => {
     });
 
     // 미가입 회원
-    if (!user) {
+    if (!user || (user && !user["salt"])) {
       throw new Error("Not a member.");
     }
 
