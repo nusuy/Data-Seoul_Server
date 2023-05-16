@@ -71,7 +71,7 @@ notificationController.readAll = async (req, res) => {
 
       list = await Notification.findAll({
         attributes: attributes,
-        where: { userId: userId, category: category, isChecked: false },
+        where: { userId: userId, category: category },
         order: [["publishDate", "DESC"]],
       }).then((res) => {
         return res;
@@ -87,7 +87,7 @@ notificationController.readAll = async (req, res) => {
           "postId",
           "commentId",
         ],
-        where: { userId: userId, isChecked: false },
+        where: { userId: userId },
         order: [["publishDate", "DESC"]],
       }).then((res) => {
         return res;
@@ -158,6 +158,11 @@ notificationController.setChecked = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+
+    if (err.message === "Invalid NotifyId.") {
+      message = err.message;
+      errCode = 400;
+    }
 
     res.status(errCode).send({
       status: errCode,
