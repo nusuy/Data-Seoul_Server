@@ -77,7 +77,7 @@ const socket = (io) => {
 
       if (!status) {
         // token validation 실패한 경우
-        io.to(socket.id).emit("regular", `[ Failed ] ${message}`);
+        io.to(socket.id).emit("last", `[ Failed ] ${message}`);
       } else {
         // 관심 강좌 조회
         const list = await Wishlist.findAll({

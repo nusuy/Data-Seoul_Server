@@ -5,6 +5,7 @@ import commentCount from "../utils/commentCount.js";
 
 const Course = models.Course;
 const Post = models.Post;
+const Wishlist = models.Wishlist;
 const Op = Sequelize.Op;
 const searchController = {};
 
@@ -13,6 +14,7 @@ searchController.findCourse = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
+    const userId = req.user;
     const type = req.params.type;
     const query = req.query.query;
 
@@ -64,6 +66,13 @@ searchController.findCourse = async (req, res) => {
     }).then((res) => {
       return res;
     });
+
+    for (const item of result) {
+      const wish = await Wishlist.findOne({
+        where: { userId: userId, courseId: item.id },
+      });
+      item["dataValues"].isLiked = wish ? true : false;
+    }
 
     // 응답 메세지 설정
     const resMessage =
