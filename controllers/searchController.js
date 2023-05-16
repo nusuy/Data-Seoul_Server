@@ -17,9 +17,10 @@ searchController.findCourse = async (req, res) => {
     const userId = req.user;
     const type = req.params.type;
     const query = req.query.query;
+    // let where;
 
     // type 유효성 검사
-    if (type !== "off" && type !== "on") {
+    if (type !== "all" && type !== "off" && type !== "on") {
       throw new Error("Invalid type.");
     }
 
@@ -30,28 +31,51 @@ searchController.findCourse = async (req, res) => {
       throw new Error("Query is Empty.");
     }
 
+    const where =
+      type === "all"
+        ? {
+            [Op.or]: [
+              {
+                title: {
+                  [Op.like]: `%${query}%`,
+                },
+              },
+              {
+                deptName: {
+                  [Op.like]: `%${query}%`,
+                },
+              },
+              {
+                deptGu: {
+                  [Op.like]: `%${query}%`,
+                },
+              },
+            ],
+          }
+        : {
+            type: type,
+            [Op.or]: [
+              {
+                title: {
+                  [Op.like]: `%${query}%`,
+                },
+              },
+              {
+                deptName: {
+                  [Op.like]: `%${query}%`,
+                },
+              },
+              {
+                deptGu: {
+                  [Op.like]: `%${query}%`,
+                },
+              },
+            ],
+          };
+
     // 데이터 검색 - 강좌명, 기관명, 기관구
     const result = await Course.findAll({
-      where: {
-        type: type,
-        [Op.or]: [
-          {
-            title: {
-              [Op.like]: `%${query}%`,
-            },
-          },
-          {
-            deptName: {
-              [Op.like]: `%${query}%`,
-            },
-          },
-          {
-            deptGu: {
-              [Op.like]: `%${query}%`,
-            },
-          },
-        ],
-      },
+      where: where,
       attributes: [
         "type",
         "id",
@@ -62,7 +86,7 @@ searchController.findCourse = async (req, res) => {
         "category",
         "capacity",
       ],
-      order: [["id", "DESC"]],
+      order: [["insertDate", "DESC"]],
     }).then((res) => {
       return res;
     });
