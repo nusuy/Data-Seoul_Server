@@ -18,6 +18,8 @@ const setFilter = (filter, item) => {
   now.setSeconds(0);
 
   switch (filter) {
+    case "none":
+      return true;
     case "upcoming":
       return new Date(item["applyStartDate"]) > now;
     case "ongoing":
@@ -41,7 +43,7 @@ courseController.readList = async (req, res) => {
     const filter = req.query.filter;
     const types = ["all", "off", "on"];
     const orders = ["new", "like", "end"];
-    const filters = ["upcoming", "ongoing", "done"];
+    const filters = ["none", "upcoming", "ongoing", "done"];
     let orderOption = null;
     let isValidType = false;
     let isValidOrder = false;
@@ -74,6 +76,18 @@ courseController.readList = async (req, res) => {
     // order 값이 올바르지 않은 경우
     if (!isValidOrder) {
       throw new Error("Invalid order.");
+    }
+
+    // filter 옵션 값 유효성 검사
+    filters.map((item) => {
+      if (item === filter) {
+        isValidFilter = true;
+      }
+    });
+
+    // filter 값이 올바르지 않을 경우
+    if (!isValidFilter) {
+      throw new Error("Invalid filter.");
     }
 
     // order option
@@ -138,22 +152,9 @@ courseController.readList = async (req, res) => {
       throw new Error("Database connection error.");
     }
 
-    // filter
-    if (filter) {
-      // filter 옵션 값 유효성 검사
-      filters.map((item) => {
-        if (item === filter) {
-          isValidFilter = true;
-        }
-      });
-
-      if (!isValidFilter) {
-        throw new Error("Invalid filter.");
-      }
-    }
-
+    // filter & isLiked
     for (const item of data) {
-      if (!filter || (filter && setFilter(filter, item))) {
+      if (setFilter(filter, item)) {
         const wish = await Wishlist.findOne({
           where: { userId: userId, courseId: item.id },
         });
