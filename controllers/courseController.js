@@ -1,4 +1,3 @@
-import renewalData from "../utils/renewal/renewalData.js";
 import models from "../models/index.js";
 
 const Course = models.Course;
@@ -50,9 +49,6 @@ courseController.readList = async (req, res) => {
     let isValidFilter = false;
     let data = null;
     const filteredCourseList = [];
-
-    // 데이터 갱신
-    const { updateResult, newLength } = await renewalData();
 
     // type 옵션 값 유효성 검사
     types.map((item) => {
@@ -164,10 +160,13 @@ courseController.readList = async (req, res) => {
       }
     }
 
+    const resMessage =
+      filteredCourseList.length === 0 ? "No Result" : "Successfully Loaded.";
+
     // 응답 전송
     res.status(200).send({
       status: 200,
-      message: `[Update Result] Offline: ${updateResult.off} - ${newLength.off}, Online: ${updateResult.on} - ${newLength.on}, Dept: ${updateResult.dept} - ${newLength.dept}`,
+      message: resMessage,
       data: filteredCourseList,
     });
   } catch (err) {
