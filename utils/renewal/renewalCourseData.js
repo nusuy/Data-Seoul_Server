@@ -43,13 +43,12 @@ const renewalCourseData = async (isOffline, recentLog) => {
   // 1-3. 데이터 개수에 따라 전체 데이터 가져오기
   const dataResult = [];
   for (let i = 0; i < count; i++) {
-    const index =
+    const endIndex =
       i + 1 === count ? 1000 * i + remainderDataCount : 1000 * (i + 1);
+    const startIndex = endIndex === dataCount ? 1000 * i + 1 : endIndex - 999;
     await axios
       .get(
-        `${process.env.OPEN_API_BASE_URL}/${
-          process.env.OPEN_API_KEY
-        }/json/${SERVICE}/${index - 999}/${index}`
+        `${process.env.OPEN_API_BASE_URL}/${process.env.OPEN_API_KEY}/json/${SERVICE}/${startIndex}/${endIndex}`
       )
       .then((res) => {
         dataResult.push(res.data[SERVICE]["row"]);
