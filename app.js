@@ -11,7 +11,7 @@ import Post from "./routes/Post.js";
 import Comment from "./routes/Comment.js";
 import Mypage from "./routes/Mypage.js";
 import Search from "./routes/Search.js";
-//import Notification from "./routes/Notification.js";
+import Notification from "./routes/Notification.js";
 
 // env
 dotenv.config();
@@ -43,7 +43,7 @@ app.use("/post", Post);
 app.use("/comment", Comment);
 app.use("/mypage", Mypage);
 app.use("/search", Search);
-//app.use("/notif", Notification);
+app.use("/notif", Notification);
 
 // PORT
 const PORT = process.env.SERVER_PORT;
