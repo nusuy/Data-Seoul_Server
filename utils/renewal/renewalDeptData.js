@@ -39,13 +39,12 @@ const renewalDeptData = async (recentLog) => {
   // 1-3. 데이터 개수에 따라 전체 데이터 가져오기
   const dataResult = [];
   for (let i = 0; i < count; i++) {
-    const index =
+    const endIndex =
       i + 1 === count ? 1000 * i + remainderDataCount : 1000 * (i + 1);
+    const startIndex = endIndex === dataCount ? 1000 * i + 1 : endIndex - 999;
     await axios
       .get(
-        `${process.env.OPEN_API_BASE_URL}/${
-          process.env.OPEN_API_KEY
-        }/json/${SERVICE}/${index - 999}/${index}`
+        `${process.env.OPEN_API_BASE_URL}/${process.env.OPEN_API_KEY}/json/${SERVICE}/${startIndex}/${endIndex}`
       )
       .then((res) => {
         dataResult.push(res.data[SERVICE]["row"]);
@@ -72,10 +71,11 @@ const renewalDeptData = async (recentLog) => {
     }
   }
 
-  // 2-3. 기관 이름이 같은 데이터 검사
+  // 2-3. 기관 이름, 기관 번호가 같은 데이터 검사
   const filteredData = [];
   result.map((item) => {
     const name = item["name"];
+    const tel = item["tel"];
     const arr = [];
     if (item["lng"] && item["lat"]) {
       arr.push(item);
@@ -83,7 +83,13 @@ const renewalDeptData = async (recentLog) => {
 
     result.map((value) => {
       // lng, lat 값이 있는 값으로 선별
-      if (value["name"].includes(name) && value.lng && value.lat) {
+      if (
+        value["name"].includes(name) &&
+        value["tel"] &&
+        value["tel"].includes(tel) &&
+        value.lng &&
+        value.lat
+      ) {
         arr.push(value);
       }
     });
@@ -112,7 +118,7 @@ const renewalDeptData = async (recentLog) => {
     addDB(item, "dept");
   });
 
-  return result.length;
+  return filteredData.length;
 };
 
 export default renewalDeptData;
