@@ -31,6 +31,8 @@ const renewalData = async () => {
       });
     }
     error.dept = true;
+  } finally {
+    console.log(`[ Data Update ] #--- Dept Data Update Completed.`);
   }
 
   // Offline Course
@@ -53,6 +55,8 @@ const renewalData = async () => {
       });
     }
     error.off = true;
+  } finally {
+    console.log(`[ Data Update ] ##-- Offline Course Data Update Completed.`);
   }
 
   // Online Course
@@ -73,6 +77,8 @@ const renewalData = async () => {
       });
     }
     error.on = true;
+  } finally {
+    console.log(`[ Data Update ] ###- Online Course Data Update Completed.`);
   }
 
   // dept 데이터 결합 (새로운 데이터가 있는 경우에만)
@@ -83,6 +89,8 @@ const renewalData = async () => {
     }
   } catch (err) {
     console.error(err);
+  } finally {
+    console.log(`[ Data Update ] #### Data Matching Completed.`);
   }
 
   const updateResult = {};

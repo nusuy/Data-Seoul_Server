@@ -11,7 +11,11 @@ const checkDuplicate = async (data) => {
     return res;
   });
 
-  return res ? true : false;
+  if (res && res["tel"] === data["tel"]) {
+    return true;
+  }
+
+  return false;
 };
 
 export default checkDuplicate;

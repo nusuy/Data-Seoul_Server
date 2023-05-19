@@ -1,4 +1,3 @@
-import renewalData from "../utils/renewal/renewalData.js";
 import models from "../models/index.js";
 
 const Course = models.Course;
@@ -18,16 +17,16 @@ const setFilter = (filter, item) => {
   now.setSeconds(0);
 
   switch (filter) {
-    case "none":
+    case "모두":
       return true;
-    case "upcoming":
+    case "신청예정":
       return new Date(item["applyStartDate"]) > now;
-    case "ongoing":
+    case "신청중":
       return (
         new Date(item["applyStartDate"]) <= now &&
         new Date(item["applyEndDate"]) >= now
       );
-    case "done":
+    case "신청마감":
       return new Date(item["applyEndDate"]) < now;
   }
 };
@@ -36,23 +35,22 @@ const setFilter = (filter, item) => {
 courseController.readList = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
+
+  let type, order, filter;
   try {
     const userId = req.user;
-    const type = req.params.type; // all / off / on
-    const order = req.query.order; // insert / like / end
-    const filter = req.query.filter;
-    const types = ["all", "off", "on"];
-    const orders = ["new", "like", "end"];
-    const filters = ["none", "upcoming", "ongoing", "done"];
+    type = req.params.type; // 모두 / 오프라인 / 온라인
+    order = req.query.order; // 최신순 / 관심설정순 / 마감날짜순
+    filter = req.query.filter;
+    const types = ["모두", "오프라인", "온라인"];
+    const orders = ["최신순", "관심설정순", "마감날짜순"];
+    const filters = ["모두", "신청예정", "신청중", "신청마감"];
     let orderOption = null;
     let isValidType = false;
     let isValidOrder = false;
     let isValidFilter = false;
     let data = null;
     const filteredCourseList = [];
-
-    // 데이터 갱신
-    const { updateResult, newLength } = await renewalData();
 
     // type 옵션 값 유효성 검사
     types.map((item) => {
@@ -92,25 +90,25 @@ courseController.readList = async (req, res) => {
 
     // order option
     switch (order) {
-      case "new":
+      case "최신순":
         orderOption = [
           ["insertDate", "DESC"],
           ["applyStartDate", "DESC"],
         ];
         break;
-      case "like":
+      case "관심설정순":
         orderOption = [
           ["likeCount", "DESC"],
           ["insertDate", "DESC"],
         ];
         break;
-      case "end":
+      case "마감날짜순":
         orderOption = [["applyEndDate", "ASC"]];
         break;
     }
 
     // 강좌 데이터 리스트 조회
-    if (type === "all") {
+    if (type === "모두") {
       data = await Course.findAll({
         attributes: [
           "type",
@@ -128,6 +126,7 @@ courseController.readList = async (req, res) => {
       });
     } else {
       // off / on 개별 조회
+      const typeValue = type === "오프라인" ? "off" : "on";
       data = await Course.findAll({
         attributes: [
           "type",
@@ -140,7 +139,7 @@ courseController.readList = async (req, res) => {
           "capacity",
         ],
         where: {
-          type: type,
+          type: typeValue,
         },
         order: orderOption,
       }).then((res) => {
@@ -164,23 +163,26 @@ courseController.readList = async (req, res) => {
       }
     }
 
+    const resMessage =
+      filteredCourseList.length === 0 ? "No Result" : "Successfully Loaded.";
+
     // 응답 전송
     res.status(200).send({
       status: 200,
-      message: `[Update Result] Offline: ${updateResult.off} - ${newLength.off}, Online: ${updateResult.on} - ${newLength.on}, Dept: ${updateResult.dept} - ${newLength.dept}`,
+      message: resMessage,
       data: filteredCourseList,
     });
   } catch (err) {
     console.error(err);
 
-    if (err.message === "Invalid type.") {
-      message = err.message;
+    if (err.message === `Invalid type.`) {
+      message = `Invalid type '${type}'.`;
       errCode = 400;
-    } else if (err.message === "Invalid order.") {
-      message = err.message;
+    } else if (err.message === `Invalid order.`) {
+      message = `Invalid order '${order}'.`;
       errCode = 400;
-    } else if (err.message === "Invalid filter.") {
-      message = err.message;
+    } else if (err.message === `Invalid filter.`) {
+      message = `Invalid filter '${filter}'.`;
       errCode = 400;
     } else if (err.message === "Database connection error.") {
       message = err.message;
