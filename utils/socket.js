@@ -1,7 +1,6 @@
 import { Sequelize } from "sequelize";
 import redisCli from "./redisCli.js";
 import models from "../models/index.js";
-import validateAccessTokenForSocket from "./validateAccessTokenForSocket.js";
 
 const User = models.User;
 const Post = models.Post;
@@ -69,15 +68,17 @@ const socket = (io) => {
     socket.on("last", async (data) => {
       const now = new Date().getDate();
 
-      // 토큰 유효성 검사
-      const token = data;
-      const { status, message, userId } = await validateAccessTokenForSocket(
-        token
-      );
+      // userId 유효성 검사
+      const userId = Number(data);
+      const user = await User.findOne({
+        where: { id: userId },
+      }).then((res) => {
+        return res;
+      });
 
-      if (!status) {
-        // token validation 실패한 경우
-        io.to(socket.id).emit("last", `[ Failed ] ${message}`);
+      if (!user) {
+        // user validation 실패한 경우
+        io.to(socket.id).emit("last", `[ Failed ] Invalid UserId.`);
       } else {
         // 관심 강좌 조회
         const list = await Wishlist.findAll({
