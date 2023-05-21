@@ -344,18 +344,8 @@ authController.requestEmailCode = async (req, res) => {
     if (user) {
       if (user.nickname) {
         throw new Error("Email Already Exists.");
-      } else {
-        // 이전에 인증 시도 했으나 가입 완료하지 않은 경우
-        await User.destroy({ where: { email: email } });
       }
     }
-
-    // DB 저장
-    await User.create({
-      email: email,
-      isSocial: false,
-      isAuthorized: false,
-    });
 
     // 인증코드 전송
     sendEmailCode(email);
@@ -395,29 +385,9 @@ authController.verifyEmailCode = async (req, res) => {
 
     const code = await redisCli.get(email);
 
-    // 인증 요청한 이메일이 아닐 경우
-    const user = await User.findOne({
-      where: {
-        email: email,
-      },
-    }).then((res) => {
-      return res;
-    });
-
-    // 인증코드를 요청한 이메일이 아닐 경우
-    if (!user) {
-      throw new Error("Invalid Email.");
-    }
-
-    // 이미 가입 완료된 이메일인 경우
-    if (user["nickname"]) {
-      throw new Error("Email Already Exists.");
-    }
-
-    // 인증코드 내역이 존재하지 않는 이메일일 경우 (인증코드 만료된 경우)
+    // 인증코드 내역이 존재하지 않는 이메일일 경우 (인증코드 만료된 경우 / 인증코드를 요청한 이메일이 아닐 경우)
     if (!code) {
-      await User.destroy({ where: { email: email } });
-      throw new Error("Code Expired");
+      throw new Error("Code not found.");
     }
 
     // 코드가 일치하지 않을 경우
@@ -425,13 +395,10 @@ authController.verifyEmailCode = async (req, res) => {
       throw new Error("Invalid Code.");
     }
 
-    // DB 업데이트
-    await User.update(
-      {
-        isAuthorized: true,
-      },
-      { where: { email: email } }
-    );
+    // redis 저장
+    await redisCli.set(email, "true", {
+      EX: 60 * 60, // expire time: 1h
+    });
 
     // 응답 전달
     res.status(200).send({
@@ -441,16 +408,10 @@ authController.verifyEmailCode = async (req, res) => {
   } catch (err) {
     console.error(err);
 
-    if (err.message === "Invalid Email.") {
-      message = err.message;
-      errCode = 400;
-    } else if (err.message === "Email Already Exists.") {
-      message = err.message;
-      errCode = 400;
-    } else if (err.message === "Invalid Code.") {
+    if (err.message === "Invalid Code.") {
       message = err.message;
       errCode = 401;
-    } else if (err.message === "Code Expired.") {
+    } else if (err.message === "Code not found.") {
       message = err.message;
       errCode = 403;
     }
@@ -471,20 +432,23 @@ authController.joinEmail = async (req, res) => {
     const password = req.body.password;
     const nickname = req.body.nickname;
 
+    // 인증 여부 검사
+    const authorization = await redisCli.get(email);
+
+    // DB에 이메일 정보 미존재 -> 이메일 인증 필요
+    if (!authorization) {
+      throw new Error("Unauthorized Email.");
+    }
+
     // email 중복확인
-    const user = await User.findOne({
+    const existing = await User.findOne({
       where: {
         email: email,
       },
     });
 
-    // DB에 이메일 정보 미존재 -> 이메일 인증 필요
-    if (!user) {
-      throw new Error("Unauthorized Email.");
-    }
-
     // DB에 정보 이미 존재
-    if (user.nickname) {
+    if (existing) {
       throw new Error("Email Already Exists.");
     }
 
@@ -501,20 +465,18 @@ authController.joinEmail = async (req, res) => {
     // password hashing
     const { hashedPassword, salt } = await createHashedPassword(password);
 
-    // DB 수정
-    await User.update(
-      {
-        nickname: nickname,
-        joinDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
-        password: hashedPassword,
-        salt: salt,
-      },
-      {
-        where: {
-          email: email,
-        },
-      }
-    );
+    // DB 저장
+    const user = await User.create({
+      email: email,
+      nickname: nickname,
+      joinDate: models.sequelize.literal("CURRENT_TIMESTAMP"),
+      isSocial: false,
+      isAuthorized: true,
+      password: hashedPassword,
+      salt: salt,
+    }).then((res) => {
+      return res;
+    });
 
     // 응답 전송
     res.status(200).send({

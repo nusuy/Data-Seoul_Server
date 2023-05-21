@@ -257,4 +257,41 @@ mypageController.setPassword = async (req, res) => {
   }
 };
 
+// 회원정보 조회
+mypageController.getUserInfo = async (req, res) => {
+  let message = "Server Error.";
+  let errCode = 500;
+  try {
+    const userId = req.user;
+    const data = {};
+
+    // user 조회
+    const user = await User.findOne({ where: { id: userId } }).then((res) => {
+      return res;
+    });
+
+    // 해당 user가 존재하지 않을 경우
+    if (!user) {
+      throw new Error("Invalid UserId.");
+    }
+
+    // 데이터 저장
+    data.email = user["email"];
+    data.nickname = user["nickname"];
+
+    // 응답 전송
+    res.status(200).send({
+      status: 200,
+      data: data,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(errCode).send({
+      status: errCode,
+      message: message,
+    });
+  }
+};
+
 export default mypageController;
