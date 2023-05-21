@@ -171,4 +171,36 @@ notificationController.setChecked = async (req, res) => {
   }
 };
 
+// 모든 알림 조회 여부
+notificationController.isAllChecked = async (req, res) => {
+  let message = "Server Error.";
+  let errCode = 500;
+  try {
+    const userId = req.user;
+
+    // 데이터 조회
+    const list = await Notification.findAll({
+      where: { userId: userId, isChecked: false },
+    }).then((res) => {
+      return res;
+    });
+
+    // 조회 여부
+    const isAllChecked = list.length === 0 ? true : false;
+
+    // 응답 전달
+    res.status(200).send({
+      status: 200,
+      isAllChecked: isAllChecked,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(errCode).send({
+      status: errCode,
+      message: message,
+    });
+  }
+};
+
 export default notificationController;
