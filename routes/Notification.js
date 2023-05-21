@@ -10,5 +10,6 @@ router.post(
   validateAccessToken,
   notificationController.setChecked
 );
+router.get("/check", validateAccessToken, notificationController.isAllChecked);
 
 export default router;
