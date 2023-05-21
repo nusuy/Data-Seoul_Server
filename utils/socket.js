@@ -97,7 +97,7 @@ const socket = (io) => {
             item["dataValues"]["applyEndDate"]
           ).getDate();
 
-          if (now <= applyEndDate && now >= applyEndDate - 3) {
+          if (now <= applyEndDate && now >= applyEndDate - 7) {
             // notification 데이터 저장
             await Notification.create({
               category: "last",
