@@ -5,7 +5,7 @@ import notificationController from "../controllers/notificationController.js";
 const router = express.Router();
 
 router.get("/", validateAccessToken, notificationController.readAll);
-router.post(
+router.patch(
   "/:notifyId",
   validateAccessToken,
   notificationController.setChecked
