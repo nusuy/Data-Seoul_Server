@@ -272,7 +272,7 @@ mypageController.getUserInfo = async (req, res) => {
 
     // 해당 user가 존재하지 않을 경우
     if (!user) {
-      throw new Error("Invalid UserId.");
+      throw new Error("Invalid User.");
     }
 
     // 데이터 저장
@@ -286,6 +286,11 @@ mypageController.getUserInfo = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+
+    if (err.message === "Invalid User.") {
+      message = err.message;
+      errCode = 403;
+    }
 
     res.status(errCode).send({
       status: errCode,
