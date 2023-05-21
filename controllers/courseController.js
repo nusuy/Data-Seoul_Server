@@ -28,6 +28,8 @@ const setFilter = (filter, item) => {
       );
     case "신청마감":
       return new Date(item["applyEndDate"]) < now;
+    case "마감임박":
+      return new Date(item["applyEndDate"]) >= now;
   }
 };
 
@@ -40,10 +42,10 @@ courseController.readList = async (req, res) => {
   try {
     const userId = req.user;
     type = req.params.type; // 모두 / 오프라인 / 온라인
-    order = req.query.order; // 최신순 / 관심설정순 / 마감날짜순
+    order = req.query.order; // 최신순 / 관심설정순 / 마감임박순
     filter = req.query.filter;
     const types = ["모두", "오프라인", "온라인"];
-    const orders = ["최신순", "관심설정순", "마감날짜순"];
+    const orders = ["최신순", "관심설정순", "마감임박순"];
     const filters = ["모두", "신청예정", "신청중", "신청마감"];
     let orderOption = null;
     let isValidType = false;
@@ -102,7 +104,7 @@ courseController.readList = async (req, res) => {
           ["insertDate", "DESC"],
         ];
         break;
-      case "마감날짜순":
+      case "마감임박순":
         orderOption = [["applyEndDate", "ASC"]];
         break;
     }
@@ -149,6 +151,18 @@ courseController.readList = async (req, res) => {
 
     if (!data) {
       throw new Error("Database connection error.");
+    }
+
+    // '마감임박순' 필터링 (신청마감 제외)
+    if (order === "마감임박순") {
+      const filteredListTemp = [];
+      data.map((item) => {
+        if (setFilter("마감임박", item)) {
+          filteredListTemp.push(item);
+        }
+      });
+
+      data = filteredListTemp;
     }
 
     // filter & isLiked
