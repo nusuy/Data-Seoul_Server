@@ -69,7 +69,7 @@ const socket = (io) => {
       const now = new Date().getDate();
 
       // userId 유효성 검사
-      const userId = Number(data);
+      const userId = data;
       const user = await User.findOne({
         where: { id: userId },
       }).then((res) => {
