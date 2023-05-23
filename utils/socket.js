@@ -122,8 +122,8 @@ const socket = (io) => {
     // 댓글 작성
     socket.on("comment", async (data) => {
       // 댓글이 작성된 postId, 댓글 작성자 userId
-      const postId = Number(data.postId);
-      const userId = Number(data.userId);
+      const postId = data.postId;
+      const userId = data.userId;
       let writer = null;
 
       if (postId) {
@@ -173,8 +173,8 @@ const socket = (io) => {
     // 댓글-답글 작성
     socket.on("reply", async (data) => {
       // 답글이 작성된 commentId, 작성자 userId
-      const commentId = Number(data.commentId);
-      const userId = Number(data.userId);
+      const commentId = data.commentId;
+      const userId = data.userId;
       let comment = null;
       const targets = [];
 
@@ -204,12 +204,12 @@ const socket = (io) => {
           return res;
         });
         replyList.map((user) => {
-          targets.push(Number(user["userId"]));
+          targets.push(user["userId"]);
         });
 
         // 알림 타겟 추가(원댓글 작성자, 게시글 작성자)
-        targets.push(Number(comment["writerId"]));
-        targets.push(Number(comment["userId"]));
+        targets.push(comment["writerId"]);
+        targets.push(comment["userId"]);
 
         // 타겟 중복 제거
         const uniqueTargets = [...new Set(targets)];
@@ -218,9 +218,9 @@ const socket = (io) => {
 
         // 타겟 분류
         for (const target of uniqueTargets) {
-          if (target === Number(comment["writerId"])) {
+          if (target === comment["writerId"]) {
             // 게시글 작성자일 경우
-            if (target === Number(comment["userId"])) {
+            if (target === comment["userId"]) {
               // 댓글 작성자 && !해당 답글 작성자 (답글 알림)
               replyTargets.push(target);
             } else {
