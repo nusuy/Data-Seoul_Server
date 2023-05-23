@@ -103,7 +103,7 @@ const socket = (io) => {
             await Notification.create({
               category: "last",
               userId: userId,
-              sourceId: item["dataValues"]["courseId"],
+              courseId: item["dataValues"]["courseId"],
             });
 
             // notification 전달 내용
@@ -146,7 +146,7 @@ const socket = (io) => {
           await Notification.create({
             category: "comment",
             userId: writer,
-            sourceId: postId,
+            postId: postId,
           });
 
           // notification 전달 내용
