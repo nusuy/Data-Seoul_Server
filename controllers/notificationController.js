@@ -1,6 +1,8 @@
 import models from "../models/index.js";
 
+const sequelize = models.sequelize;
 const Notification = models.Notification;
+const Course = models.Course;
 const notificationController = {};
 
 // 알림 목록 조회
@@ -40,6 +42,7 @@ notificationController.readAll = async (req, res) => {
           attributes = [
             ["id", "notifyId"],
             "category",
+            [sequelize.literal("Course.type"), "type"],
             "isChecked",
             "publishDate",
             "userId",
@@ -71,6 +74,7 @@ notificationController.readAll = async (req, res) => {
 
       list = await Notification.findAll({
         attributes: attributes,
+        include: [{ model: Course, required: false, attributes: [] }],
         where: { userId: userId, category: category },
         order: [["publishDate", "DESC"]],
       }).then((res) => {
@@ -81,12 +85,14 @@ notificationController.readAll = async (req, res) => {
         attributes: [
           ["id", "notifyId"],
           "category",
+          [sequelize.literal("Course.type"), "type"],
           "isChecked",
           "publishDate",
           "courseId",
           "postId",
           "commentId",
         ],
+        include: [{ model: Course, required: false, attributes: [] }],
         where: { userId: userId },
         order: [["publishDate", "DESC"]],
       }).then((res) => {
