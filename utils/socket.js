@@ -85,6 +85,7 @@ const socket = (io) => {
           where: { userId: userId },
           attributes: [
             [sequelize.literal("Course.id"), "courseId"],
+            [sequelize.literal("Course.type"), "type"],
             [sequelize.literal("Course.applyEndDate"), "applyEndDate"],
           ],
           include: [{ model: Course, attributes: [] }],
@@ -109,6 +110,7 @@ const socket = (io) => {
             const notify = {
               target: userId,
               courseId: item["dataValues"]["courseId"],
+              type: item["dataValues"]["type"],
               remaining: applyEndDate - now,
             };
 
