@@ -105,24 +105,12 @@ authController.loginKakao = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
   try {
-    const code = req.query.code;
-
-    // 인가코드 전송
-    const result = await axios.post(
-      `${process.env.KAKAO_OAUTH_TOKEN_API_URL}?grant_type=${process.env.KAKAO_GRANT_TYPE}&client_id=${process.env.KAKAO_CLIENT_ID}&redirect_uri=${process.env.KAKAO_REDIRECT_URI}&code=${code}`,
-      null,
-      {
-        headers: {
-          "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
-        },
-      }
-    );
-    const accessToken = result.data["access_token"];
+    const kakaoToken = req.body.kakaoToken;
 
     // 프로필 정보 가져오기
     const profile = await axios.get(`${process.env.KAKAO_API_URL}/v2/user/me`, {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${kakaoToken}`,
         "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
       },
     });
