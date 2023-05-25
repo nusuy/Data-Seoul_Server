@@ -186,8 +186,8 @@ authController.loginKakao = async (req, res) => {
       });
 
       // 응답 전달
-      res.status(200).send({
-        status: 200,
+      res.status(201).send({
+        status: 201,
         message:
           "[Provider: Kakao] Authorized Successfully. (Nickname Required.)",
         data: {
