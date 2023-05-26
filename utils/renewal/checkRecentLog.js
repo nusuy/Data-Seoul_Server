@@ -4,7 +4,7 @@ const System = models.System;
 
 const checkRecentUpdate = (date, now) => {
   // 최근 갱신 날짜보다 24시간 지난 시점이라면 true
-  return date.setDate(date.getDate() - 1) >= now;
+  return date.setDate(date.getDate() + 1) <= now;
 };
 
 const checkRecentLog = async (category) => {
