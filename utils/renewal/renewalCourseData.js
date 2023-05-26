@@ -35,13 +35,27 @@ const renewalCourseData = async (isOffline, recentLog) => {
       throw new Error("Open API request failed.");
     });
 
-  // 1-2. 데이터 개수와 기존 데이터 개수 비교
-  const existingCount = recentLog.recentUpdate ? recentLog.log.count : null;
+  // 1-2. log의 데이터 개수 수정
+  await System.update(
+    {
+      total_count: dataCount,
+    },
+    {
+      where: {
+        id: recentLog.newLogId,
+      },
+    }
+  );
+
+  // 1-3. 데이터 개수와 기존 데이터 개수 비교
+  const existingCount = recentLog.recentUpdate
+    ? recentLog.log["total_count"]
+    : null;
   if (dataCount === existingCount) {
-    return;
+    return 0;
   }
 
-  // 1-3. 데이터 개수에 따라 전체 데이터 가져오기
+  // 1-4. 데이터 개수에 따라 전체 데이터 가져오기
   const dataResult = [];
   for (let i = 0; i < count; i++) {
     const endIndex =
@@ -97,9 +111,12 @@ const renewalCourseData = async (isOffline, recentLog) => {
   });
 
   // 3. DB에 저장
+  for (const item of result) {
+    await addDB(item, type);
+  }
   await System.update(
     {
-      count: dataCount,
+      new_count: result.length,
     },
     {
       where: {
@@ -107,9 +124,6 @@ const renewalCourseData = async (isOffline, recentLog) => {
       },
     }
   );
-  for (const item of result) {
-    await addDB(item, type);
-  }
 
   // !!!!!!!!!!!!!!!!!!!
   // 4. 카테고리 매칭 (total: 3595, zero-based)
