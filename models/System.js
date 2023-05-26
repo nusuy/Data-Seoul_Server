@@ -16,7 +16,12 @@ const System = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull: false,
       },
-      count: {
+      total_count: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      new_count: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
