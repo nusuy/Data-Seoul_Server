@@ -104,6 +104,7 @@ authController.login = async (req, res) => {
 authController.loginKakao = async (req, res) => {
   let message = "Server Error.";
   let errCode = 500;
+  let kakaoUserId;
   try {
     const kakaoToken = req.body.kakaoToken;
 
@@ -120,7 +121,7 @@ authController.loginKakao = async (req, res) => {
     }
 
     const email = profile.data.kakao_account.email;
-    const kakaoUserId = profile.data.id;
+    kakaoUserId = profile.data.id;
 
     // 회원조회
     let user = await User.findOne({
@@ -201,6 +202,26 @@ authController.loginKakao = async (req, res) => {
     if (err.message === "Email Consent Needed.") {
       message = err.message;
       errCode = 403;
+
+      // kakao unlink
+      await axios
+        .post(
+          `${process.env.KAKAO_API_URL}/v1/user/unlink`,
+          {
+            target_id_type: "user_id",
+            target_id: kakaoUserId,
+          },
+          {
+            headers: {
+              "Content-type": "application/x-www-form-urlencoded;",
+              Authorization: `KakaoAK ${process.env.KAKAO_APP_ADMIN_KEY}`,
+            },
+          }
+        )
+        .then((res) => {
+          console.log("[Provider: Kakao] Removed Successfully.");
+          console.log(res);
+        });
     } else if (err.message === "Request failed with status code 400") {
       message = "Invalid Authorization Code";
       errCode = 403;
