@@ -198,7 +198,6 @@ authController.loginKakao = async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-
     if (err.message === "Email Consent Needed.") {
       message = err.message;
       errCode = 403;
@@ -222,9 +221,9 @@ authController.loginKakao = async (req, res) => {
           console.log("[Provider: Kakao] Removed Successfully.");
           console.log(res);
         });
-    } else if (err.message === "Request failed with status code 400") {
-      message = "Invalid Authorization Code";
-      errCode = 403;
+    } else if (err.message === "Request failed with status code 401") {
+      message = "Invalid access token";
+      errCode = 401;
     }
 
     res.status(errCode).send({
