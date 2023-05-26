@@ -7,6 +7,7 @@ import { parseDate } from "./checkValue.js";
 
 dotenv.config();
 const System = models.System;
+const Course = models.Course;
 
 const renewalCourseData = async (isOffline, recentLog) => {
   const type = isOffline ? "off" : "on";
@@ -106,9 +107,48 @@ const renewalCourseData = async (isOffline, recentLog) => {
       },
     }
   );
-  result.map((item) => {
-    addDB(item, type);
-  });
+  for (const item of result) {
+    await addDB(item, type);
+  }
+
+  // 4. 카테고리 매칭 (total: 3595, zero-based)
+  const totalCount = 3595;
+  const indexCount = Math.ceil(totalCount / 1000);
+  const indexRemainder = 595;
+  const categoryData = [];
+  for (let i = 0; i < indexCount; i++) {
+    const endIndex =
+      i + 1 === indexCount ? i * 1000 + indexRemainder - 1 : (i + 1) * 1000 - 1;
+    const startIndex = i * 1000;
+    await axios
+      .get(
+        `${process.env.FAST_API_BASE_URL}/category/${startIndex}/${endIndex}`
+      )
+      .then((res) => {
+        categoryData.push(res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+        throw new Error("Fast API request failed.");
+      });
+  }
+
+  // 데이터 업데이트
+  try {
+    for (const set of categoryData) {
+      for (const item of set) {
+        await Course.update(
+          {
+            category: item["category"],
+          },
+          { where: { courseCode: item["id"] } }
+        );
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    console.log("Category matching failed.");
+  }
 
   return result.length;
 };
