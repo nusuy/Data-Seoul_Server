@@ -111,6 +111,7 @@ const renewalCourseData = async (isOffline, recentLog) => {
     await addDB(item, type);
   }
 
+  // !!!!!!!!!!!!!!!!!!!
   // 4. 카테고리 매칭 (total: 3595, zero-based)
   const totalCount = 3595;
   const indexCount = Math.ceil(totalCount / 1000);
@@ -149,6 +150,7 @@ const renewalCourseData = async (isOffline, recentLog) => {
     console.error(err);
     console.log("Category matching failed.");
   }
+  // !!!!!!!!!!!!!!!!!!!
 
   return result.length;
 };
