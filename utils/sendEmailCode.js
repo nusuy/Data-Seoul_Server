@@ -1,9 +1,16 @@
-import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
+import ejs from "ejs";
+import path from "path";
+import fs from "fs";
 import randomString from "./randomString.js";
 import redisCli from "../utils/redisCli.js";
 
 dotenv.config();
+
+const imagePath = "./public/eduSeoulLogo.png";
+const image = fs.readFileSync(imagePath);
+const base64Image = image.toString("base64");
 
 const smtpTransport = nodemailer.createTransport({
   service: process.env.SMTP_SERVICE,
@@ -16,14 +23,27 @@ const smtpTransport = nodemailer.createTransport({
   },
 });
 
-const sendEmailCode = (email) => {
+const sendEmailCode = async (email) => {
   const code = randomString(6);
+  const __dirname = path.resolve();
+  let emailTemplete;
+  ejs.renderFile(
+    __dirname + "/emailTemplete.ejs",
+    { code: code, base64Image: base64Image },
+    (err, data) => {
+      if (err) {
+        console.error("ejs.renderFile Error");
+        console.error(err);
+      }
+      emailTemplete = data;
+    }
+  );
 
   const mailOptions = {
     from: process.env.SMTP_USER,
     to: email,
     subject: "[평생학습 포털 모바일] 이메일 인증 코드 입력 안내",
-    text: `하단의 6자리 인증코드를 회원가입창에 입력하여 회원가입을 완료해주세요.\n해당 코드는 5분 동안 유효합니다.\n인증코드: ${code}\n문제가 발생한 경우 고객센터로 문의 바랍니다.\n감사합니다.`,
+    html: emailTemplete,
   };
 
   smtpTransport.sendMail(mailOptions, async (err, res) => {
