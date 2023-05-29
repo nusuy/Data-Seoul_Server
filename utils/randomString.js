@@ -1,11 +1,10 @@
-const randomString = (length) => {
-  const chars = `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ`;
-  let randomString = "";
+import crypto from "crypto";
 
-  for (let i = 0; i < length; i++) {
-    const random = Math.floor(Math.random() * chars.length);
-    randomString += chars.substring(random, random + 1);
-  }
+const randomString = (length) => {
+  const randomString = crypto
+    .randomBytes(length)
+    .toString("hex")
+    .substring(0, length);
 
   return randomString;
 };
